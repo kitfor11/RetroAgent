@@ -11,11 +11,11 @@
 """
 from typing import List, Optional
 
-from app.skills.embedding import build_vocab, cosine_similarity, text_to_vec
+from app.skills.embedding import Embedder, cosine_similarity
 from app.skills.models import Skill
 
 
-def retrieve(task: str, skills: List[Skill], threshold: float = 0.3) -> Optional[Skill]:
+def retrieve(task: str, skills: List[Skill], embedder: Embedder, threshold: float = 0.3) -> Optional[Skill]:
     """从技能库里找和任务最相似的技能。
 
     返回：最相似且相似度 ≥ 阈值的技能；没有则返回 None。
@@ -23,19 +23,19 @@ def retrieve(task: str, skills: List[Skill], threshold: float = 0.3) -> Optional
     if not skills:
         return None
 
-    # 词表要包含「所有技能的 name + description + 任务」，这样所有向量的维度才一致
+    # 一次性编码「任务 + 所有技能的 name + description」，向量顺序和 texts 一一对应
     texts = [task]
     for s in skills:
         texts.append(s.name)
         texts.append(s.description)
-    vocab = build_vocab(texts)
-    task_vec = text_to_vec(task, vocab)
+    vecs = embedder.encode(texts)
+    task_vec = vecs[0]  # 第 0 个是任务
 
     best_skill = None
     best_score = -1.0
-    for skill in skills:
-        name_vec = text_to_vec(skill.name, vocab)
-        desc_vec = text_to_vec(skill.description, vocab)
+    for i, skill in enumerate(skills):
+        name_vec = vecs[1 + 2 * i]  # 每个技能占两位：name 在奇数位
+        desc_vec = vecs[2 + 2 * i]  # description 在偶数位
         # 同时比 name 和 description，取较大值
         score = max(
             cosine_similarity(task_vec, name_vec),

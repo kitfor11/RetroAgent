@@ -22,6 +22,12 @@ class Settings:
         self.deepseek_model = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
         self.redis_host = os.getenv("REDIS_HOST", "localhost")
         self.redis_port = int(os.getenv("REDIS_PORT", "6379"))
+        # embedding 后端：ngram（默认，零依赖）或 sentence_transformers（真实语义，需装依赖）
+        self.embedding_backend = os.getenv("EMBEDDING_BACKEND", "ngram")
+        self.embedding_model = os.getenv(
+            "EMBEDDING_MODEL",
+            "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        )
 
 
 # 全局单例：别处 `from app.config import settings` 就能拿到同一份配置

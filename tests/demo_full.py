@@ -1,4 +1,4 @@
-"""完整进化演示：一键跑通「解决 → 复用 → 失败 → 记教训」。
+"""完整进化演示：一键跑通「解决 → 复用 → 失败 → 记教训 → 跨语言复用」。
 
 用法：venv/Scripts/python tests/demo_full.py
 
@@ -44,6 +44,12 @@ def main() -> None:
     print(f"  method = {r3['method']}")
     if r3["method"] == "failed":
         print(f"  教训 = {r3['learned_lesson'][:60]}...")
+
+    # 场景 4：跨语言复用——中文任务命中英文技能（只有真实 embedding 做得到）
+    print("\n【场景 4】中文任务复用英文技能（语义检索）")
+    r4 = solve_task("把 hello world 反转", skill_store, memory_store)
+    print(f"  method = {r4['method']}")
+    print(f"  复用的技能 = {r4.get('skill')}")
 
     # 汇总：看看进化成果
     print("\n" + "=" * 60)

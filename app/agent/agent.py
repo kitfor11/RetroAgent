@@ -10,6 +10,7 @@ from typing import Dict
 from app.agent.react_loop import run
 from app.agent.reflect import judge_success, reflect, reflect_failure
 from app.memory.retrieve import retrieve_memories
+from app.skills.embedding import get_embedder
 from app.skills.retrieve import retrieve
 from app.skills.store import SkillStore
 
@@ -24,11 +25,14 @@ def solve_task(task: str, skill_store: SkillStore, memory_store) -> Dict:
 
     memory_store 只要是「有 save / list_all 方法的存储」就行（和技能库同一套接口约定）。
     """
+    # 全局唯一的 embedder：按配置返回（默认 n-gram，可切真实模型）
+    embedder = get_embedder()
+
     # 1. 检索相关教训，等会儿注入 prompt 让 agent 避坑
-    lessons = retrieve_memories(task, memory_store.list_all())
+    lessons = retrieve_memories(task, memory_store.list_all(), embedder)
 
     # 2. 检索技能库：有没有和任务相似的技能
-    existing = retrieve(task, skill_store.list_all())
+    existing = retrieve(task, skill_store.list_all(), embedder)
     if existing:
         existing.use_count += 1  # 复用次数 +1
         skill_store.update(existing)  # 写回 Redis，持久化复用次数

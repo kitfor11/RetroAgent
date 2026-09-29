@@ -3,10 +3,11 @@
 这是「检索」的基础：计算机不懂文字含义，只懂数字。
 embedding 就是把文字「翻译」成向量，让意思相近的文字，向量也相近。
 
-MVP 用「字符 n-gram」：把文字切成重叠的小片段（如 3 个字符一段）。
-相比「词袋」（按整个词匹配），它对词形变化更鲁棒——
-"reverse" 和 "reverses" 共享大量 3-gram，相似度会高很多。
-（生产环境会换成真实 embedding 模型，但「文字→向量→算相似度」的流程完全一样。）
+这里用「接口 + 可替换实现」：
+- CharNgramEmbedder：字符 n-gram（零依赖，只比字面、不比语义）
+- SentenceTransformerEmbedder：真实语义模型（多语言，比「意思」）
+
+业务代码只依赖 Embedder 接口，通过 get_embedder() 按配置选择具体实现。
 """
 import re
 
@@ -48,3 +49,47 @@ def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
     if denom == 0:
         return 0.0
     return dot / denom
+
+class Embedder:
+    """向量化接口：把一批文本变成一批向量（形状 n×维度）。"""
+    def encode(self, texts: list[str]) -> np.ndarray:
+        raise NotImplementedError
+
+
+class CharNgramEmbedder(Embedder):
+    """字符 n-gram 实现：把现在的函数包进来，行为不变。"""
+    def encode(self, texts: list[str]) -> np.ndarray:
+        vocab = build_vocab(texts)
+        return np.array([text_to_vec(t, vocab) for t in texts])
+
+
+
+class SentenceTransformerEmbedder(Embedder):
+    """真实语义模型实现。"""
+    def __init__(self, model_name: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"):
+        from sentence_transformers import SentenceTransformer
+        self.model = SentenceTransformer(model_name)
+
+    def encode(self, texts: list[str]) -> np.ndarray:
+        return self.model.encode(texts)
+
+
+_embedder: Embedder | None = None
+
+
+def get_embedder() -> Embedder:
+    """按配置返回全局唯一的 embedder（惰性创建，只建一次）。
+
+    为什么惰性：真实模型首次要下载并载入（慢、占内存），
+    所以不在一 import 时就建，而是第一次真正用到检索时才建。
+    """
+    global _embedder
+    if _embedder is None:
+        from app.config import settings
+
+        if settings.embedding_backend == "sentence_transformers":
+            _embedder = SentenceTransformerEmbedder(settings.embedding_model)
+        else:
+            _embedder = CharNgramEmbedder()
+    return _embedder
+ 

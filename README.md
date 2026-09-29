@@ -27,7 +27,7 @@
 - **ReAct 循环**：想一步 → 调工具 → 看结果，多步推理
 - **反思提炼**：角色切换让 LLM 复盘轨迹，抽取技能/教训
 - **自我评估**：`LLM-as-judge` 判断「是否真的成功」
-- **检索（RAG）**：字符 n-gram + 余弦相似度 + 阈值 + name/description 双匹配
+- **检索（RAG）**：余弦相似度 + 阈值 + name/description 双匹配；向量化可切换（字符 n-gram / 真实语义模型）
 - **Redis**：技能库用 hash（天然查重），记忆库用 list（只追加）
 - **FastAPI**：RESTful 接口；**MCP**：工具暴露给任意 MCP 客户端
 - **大模型**：DeepSeek（OpenAI 兼容接口）+ 结构化输出 + 防御性解析
@@ -37,7 +37,7 @@
 1. **为什么用「接口 + 可替换实现」**：`SkillStore` 抽象出 `save/list_all/update`，从 JSON 文件换成 Redis 只改 `main.py` 两行，业务逻辑零改动。
 2. **为什么技能库用 hash 而非 list**：list 只能追加，无法按名去重和更新；hash 的 `hset` 同名覆盖天然查重，更新就是再 `hset` 一次。
 3. **为什么需要 LLM-as-judge**：光看「有没有 Final Answer」无法判断成败——模型会「优雅地失败」（老实说「我没有这个工具」就交差）。所以要靠模型的判断力鉴别真伪。
-4. **字符 n-gram 的局限**：它只比字面、不比语义，「把文本反转」和 `reverse-text` 字面零重叠就会 miss。这正是生产环境用真实 embedding 模型的原因。
+4. **为什么 embedding 也要「接口 + 可替换实现」**：字符 n-gram 只比字面、不比语义，中文↔英文会 miss。所以把向量化抽象成 `Embedder` 接口，n-gram 和真实语义模型都能插拔，通过 `EMBEDDING_BACKEND` 一键切换。
 
 ## 项目结构
 
@@ -64,6 +64,8 @@ app/
 4. 启动服务：`uvicorn app.main:app --reload`
 5. 打开 `http://127.0.0.1:8000/docs` 测试
 
+> **可选：启用真实语义检索**。默认用字符 n-gram（零依赖）。要解决中文↔英文语义鸿沟，执行 `pip install sentence-transformers`，再把 `.env` 里的 `EMBEDDING_BACKEND` 改为 `sentence_transformers`（首次运行会下载约 120MB 模型）。验证效果跑 `venv/Scripts/python tests/verify_embedding.py`。
+
 ## API
 
 | 接口 | 方法 | 说明 |
@@ -74,6 +76,6 @@ app/
 
 ## 已知局限 / 未来方向
 
-- 检索用字符 n-gram，中文↔英文存在**语义鸿沟** → 未来换真实 embedding 模型
+- 默认检索仍用字符 n-gram，中文↔英文有**语义鸿沟**（可设 `EMBEDDING_BACKEND=sentence_transformers` 换真实模型解决）
 - 失败判定依赖 LLM 裁判，存在概率性
 - 技能按名字查重，同义不同名（如 `reverse-text` vs `reverse-string`）不会合并
