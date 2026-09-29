@@ -1,0 +1,15 @@
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# ===== 虚拟环境 =====
+venv/
+
+# ===== 敏感信息（含 API Key，绝不能提交）=====
+.env
+
+# ===== 运行时数据（旧版 JSON 存储的遗留文件，现已改用 Redis）=====
+skills.json
+memories.json
+demo_skills.json

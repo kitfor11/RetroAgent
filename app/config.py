@@ -1,0 +1,28 @@
+"""配置模块：统一读取 .env 里的配置，全项目从这里拿配置。"""
+import os
+
+from dotenv import load_dotenv
+
+# 把 .env 文件里的 KEY=VALUE 读进程序的环境变量（之后才能用 os.getenv 取到）
+load_dotenv()
+
+
+class Settings:
+    """集中管理所有配置项，避免配置散落在各处。
+
+    每个配置项都「先从环境变量取，取不到就用默认值」，
+    这样 .env 没配时程序也能跑（只是 key 为空）。
+    """
+
+    def __init__(self) -> None:
+        self.deepseek_api_key = os.getenv("DEEPSEEK_API_KEY", "")
+        self.deepseek_base_url = os.getenv(
+            "DEEPSEEK_BASE_URL", "https://api.deepseek.com"
+        )
+        self.deepseek_model = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
+        self.redis_host = os.getenv("REDIS_HOST", "localhost")
+        self.redis_port = int(os.getenv("REDIS_PORT", "6379"))
+
+
+# 全局单例：别处 `from app.config import settings` 就能拿到同一份配置
+settings = Settings()
