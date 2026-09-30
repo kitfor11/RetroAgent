@@ -8,11 +8,12 @@ from app.llm import chat
 from app.rag.store import ChromaStore
 
 
-def answer_question(question: str, store: ChromaStore, k: int = 3) -> str:
-    """检索相关片段，结合它们回答问题（带引用来源）。"""
+def rag_answer(question: str, store: ChromaStore, k: int = 3) -> dict:
+    """RAG 问答，返回 {answer, sources}（接口层用，能同时拿到回答和引用来源）。"""
     hits = store.search(question, k=k)
+    sources = [h["source"] for h in hits]
     if not hits:
-        return "（没有检索到相关内容）"
+        return {"answer": "（没有检索到相关内容）", "sources": sources}
 
     parts = []
     for i, hit in enumerate(hits, 1):
@@ -30,4 +31,9 @@ def answer_question(question: str, store: ChromaStore, k: int = 3) -> str:
         },
         {"role": "user", "content": f"资料：\n{context}\n\n问题：{question}"},
     ]
-    return chat(messages)
+    return {"answer": chat(messages), "sources": sources}
+
+
+def answer_question(question: str, store: ChromaStore, k: int = 3) -> str:
+    """简化版：只返回回答文本（demo 用）。"""
+    return rag_answer(question, store, k)["answer"]

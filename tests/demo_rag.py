@@ -53,7 +53,7 @@ def setup() -> None:
     # 一张「内容藏在图里」的扫描件：只有 OCR 能读出来
     img = Image.new("RGB", (1100, 150), "white")
     ImageDraw.Draw(img).text(
-        (20, 50), "会议纪要：下季度推出 VLM 看图问答", fill="black", font=_load_font()
+        (20, 50), "会议纪要：下季度推出多语言支持", fill="black", font=_load_font()
     )
     img.save(SANDBOX_ROOT / "会议纪要.png")
 

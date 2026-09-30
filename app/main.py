@@ -6,7 +6,11 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 
 from app.agent.agent import solve_task
+from app.agent.tools import SANDBOX_ROOT
 from app.memory.store import RedisMemoryStore
+from app.rag.indexer import index_directory
+from app.rag.qa import rag_answer
+from app.rag.store import get_store
 from app.skills.store import RedisSkillStore
 
 app = FastAPI(title="EvoAgent")
@@ -39,3 +43,25 @@ def list_skills():
 def list_memories():
     """查看长期记忆（只列出教训内容）。"""
     return {"memories": [m.lesson for m in memory_store.list_all()]}
+
+
+class AskRequest(BaseModel):
+    """文档问答请求：问题 + 可选检索条数。"""
+
+    question: str
+    k: int = 3
+
+
+@app.post("/index")
+def index_docs():
+    """把沙盒目录下的文件索引进向量库（先清空再全量索引），返回入库 chunk 数。"""
+    store = get_store()
+    store.reset()
+    n = index_directory(SANDBOX_ROOT, store)
+    return {"indexed_chunks": n}
+
+
+@app.post("/ask")
+def ask(req: AskRequest):
+    """文档问答：检索沙盒文件内容，带引用来源回答。"""
+    return rag_answer(req.question, get_store(), k=req.k)

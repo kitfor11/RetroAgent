@@ -138,6 +138,30 @@ def read_image_text(path: str) -> str:
         return f"OCR failed: {e}"
 
 
+@register
+def search_docs(query: str, k: int = 3) -> str:
+    """Search the document knowledge base (indexed from sandbox files) for chunks related to a question.
+    Input: query - the question to search for; k - how many chunks to return.
+    Output: the top related chunks, each prefixed with its source file."""
+    # 懒 import：只有真正调用这个工具时才加载向量库（嵌入模型很重）
+    from app.rag.indexer import index_directory
+    from app.rag.store import get_store
+
+    store = get_store()  # 单例，进程内只建一次
+    if store.count() == 0:  # 库为空时先把沙盒文件索引进库（懒建库）
+        index_directory(SANDBOX_ROOT, store)
+
+    try:  # 模型可能把 k 写成字符串（如 "3"），兜底转 int
+        k = int(k)
+    except (TypeError, ValueError):
+        k = 3
+
+    hits = store.search(query, k=k)
+    if not hits:
+        return "(知识库为空或没有检索到相关内容)"
+    return "\n".join(f"[{h['source']}] {h['text']}" for h in hits)
+
+
 def call_tool(name: str, args: Dict[str, Any]) -> Any:
     """按名字执行工具。找不到工具时报错（这样 Agent 乱编工具名时能被发现）。"""
     if name not in TOOLS:

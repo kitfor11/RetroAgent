@@ -43,9 +43,29 @@ class ChromaStore:
 
     def search(self, question: str, k: int = 3) -> list[dict]:
         """检索与问题最相似的 k 个 chunk，返回 [{text, source}, ...]。"""
+        if self._collection.count() == 0:
+            return []  # 空库直接返回，避免 query 在空集合上报错
         q_vec = self._embedder.encode([question])[0].tolist()
         res = self._collection.query(query_embeddings=[q_vec], n_results=k)
         hits = []
         for doc, meta in zip(res["documents"][0], res["metadatas"][0]):
             hits.append({"text": doc, "source": meta.get("source", "?")})
         return hits
+
+    def count(self) -> int:
+        """当前库里有多少条 chunk。"""
+        return self._collection.count()
+
+
+_store: ChromaStore | None = None
+
+
+def get_store(collection_name: str = "documents") -> ChromaStore:
+    """全局单例：向量库初始化较重（要加载嵌入模型），进程内只建一次。
+
+    HTTP 接口和 Agent 工具共用这同一个库，避免重复加载模型、重复索引。
+    """
+    global _store
+    if _store is None:
+        _store = ChromaStore(collection_name=collection_name)
+    return _store

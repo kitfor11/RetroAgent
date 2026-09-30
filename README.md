@@ -31,7 +31,7 @@
 - **向量检索**：余弦相似度 + 阈值；向量化可切换（字符 n-gram / 真实语义模型）
 - **文件工具 + 沙盒**：list / read / mkdir / move 真实文件操作，全部限制在沙盒目录内
 - **OCR（多模态）**：PaddleOCR 看图识字，让文件整理从「按扩展名」升级到「按内容」
-- **文档 RAG（Chroma 向量库）**：切片 → 向量化 → 检索 top-k → 带引用回答；图片经 OCR 也能入库
+- **文档 RAG（Chroma 向量库）**：切片 → 向量化 → 检索 top-k → 带引用回答；图片经 OCR 也能入库；既暴露成 `/ask` 接口，也作为 `search_docs` 工具给 Agent 用
 - **Redis**：技能库用 hash（天然查重），记忆库用 list（只追加）
 - **FastAPI**：RESTful 接口；**MCP**：工具暴露给任意 MCP 客户端
 - **大模型**：DeepSeek（OpenAI 兼容接口）+ 结构化输出 + 防御性解析（含 stop 序列防「脑补」）
@@ -56,7 +56,7 @@ app/
 │   └── agent.py        # 进化主链路
 ├── skills/             # 技能库：模型 / 存储 / 检索 / 向量化
 ├── memory/             # 记忆库：存储 / 检索
-├── multimodal/         # 多模态：OCR（看图识字），VLM 待加
+├── multimodal/         # 多模态：OCR（看图识字）
 │   └── ocr.py          # OCR 引擎（接口 + PaddleOCR + 降级占位）
 ├── rag/                # 文档 RAG：切片 / 向量库 / 索引 / 问答
 │   ├── chunker.py      # 切片器（固定长度 + overlap）
@@ -82,6 +82,7 @@ app/
 - 文件整理助手（真实文件工具 + CoT 思维链）：`venv/Scripts/python tests/demo_files.py`
 - OCR 文件整理（看图识字、按内容归档）：`venv/Scripts/python tests/demo_ocr.py`
 - 文档 RAG 问答（Chroma 向量库 + 带引用回答，含图片 OCR 入库）：`venv/Scripts/python tests/demo_rag.py`
+- Agent 调用文档检索工具（`search_docs`，自己查知识库回答）：`venv/Scripts/python tests/demo_agent_search.py`
 
 > **可选：启用真实语义检索**。默认用字符 n-gram（零依赖）。要解决中文↔英文语义鸿沟，执行 `pip install sentence-transformers`，再把 `.env` 里的 `EMBEDDING_BACKEND` 改为 `sentence_transformers`（首次运行会下载约 120MB 模型）。验证效果跑 `venv/Scripts/python tests/verify_embedding.py`。
 
@@ -94,10 +95,12 @@ app/
 | `/solve` | POST | 提交任务，走完整进化链路，返回 `method`（`solved` / `reused_skill` / `failed`） |
 | `/skills` | GET | 查看技能库 |
 | `/memories` | GET | 查看经验记忆 |
+| `/index` | POST | 把沙盒文件索引进文档向量库（先清空再全量索引） |
+| `/ask` | POST | 文档问答：检索相关片段，带引用来源回答 |
 
 ## 已知局限 / 未来方向
 
 - 默认检索仍用字符 n-gram，中文↔英文有**语义鸿沟**（可设 `EMBEDDING_BACKEND=sentence_transformers` 换真实模型解决）
 - 失败判定依赖 LLM 裁判，存在概率性
 - 技能按名字查重，同义不同名（如 `reverse-text` vs `reverse-string`）不会合并
-- 文件整理已支持 OCR「看图识字」按内容分类；VLM（看图问答）是后续方向
+- 文档向量库是「快照」：文件改动后需重新 `/index` 才会生效（`search_docs` 工具也只懒建一次）
