@@ -41,6 +41,7 @@ async function submitTask() {
     btn.disabled = false;
     refreshSkills();    // 任务结束后技能/记忆可能变了，刷新侧栏
     refreshMemories();
+    refreshFiles();     // Agent 可能整理/移动了沙盒文件
   }
 }
 
@@ -101,6 +102,26 @@ async function askQuestion() {
   }
 }
 
+// ---------- 沙盒文件 ----------
+async function refreshFiles() {
+  const list = document.getElementById("files-list");
+  try {
+    const resp = await fetch("/files");
+    const tree = await resp.json();
+    list.innerHTML = renderTree(tree);
+  } catch (e) {
+    list.innerHTML = `<li class="error">${escapeHtml(e.message)}</li>`;
+  }
+}
+
+function renderTree(node) {
+  if (node.type === "file") {
+    return `<li class="file"><span>📄 ${escapeHtml(node.name)}</span><span class="size">${node.size_kb} KB</span></li>`;
+  }
+  const kids = (node.children || []).map(renderTree).join("");
+  return `<li class="dir"><span class="dir-name">📁 ${escapeHtml(node.name)}</span><ul>${kids || '<li class="muted">（空）</li>'}</ul></li>`;
+}
+
 // ---------- 侧栏 ----------
 async function refreshSkills() {
   const list = document.getElementById("skills-list");
@@ -133,6 +154,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("task-btn").addEventListener("click", submitTask);
   document.getElementById("qa-btn").addEventListener("click", askQuestion);
   document.getElementById("index-btn").addEventListener("click", buildIndex);
+  document.getElementById("files-refresh").addEventListener("click", refreshFiles);
   document.getElementById("skills-refresh").addEventListener("click", refreshSkills);
   document.getElementById("memories-refresh").addEventListener("click", refreshMemories);
 
@@ -151,6 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.key === "Enter") askQuestion();
   });
 
+  refreshFiles();
   refreshSkills();
   refreshMemories();
 });

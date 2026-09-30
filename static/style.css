@@ -155,6 +155,11 @@ textarea { resize: vertical; }
 }
 
 .list { list-style: none; padding: 0; margin: 0; max-height: 300px; overflow-y: auto; }
+.tree { list-style: none; padding: 0; margin: 0; max-height: 260px; overflow-y: auto; }
+.tree ul { list-style: none; padding-left: 16px; margin: 4px 0 0; }
+.tree li { padding: 2px 0; font-size: 13px; }
+.tree .file { display: flex; justify-content: space-between; gap: 8px; }
+.tree .file .size { color: var(--muted); font-size: 12px; flex-shrink: 0; }
 .list li {
   padding: 8px 10px;
   border-bottom: 1px solid var(--border);

@@ -82,6 +82,29 @@ def ask(req: AskRequest):
     return rag_answer(req.question, get_store(), k=req.k)
 
 
+def _build_tree(path: Path) -> dict:
+    """递归把沙盒目录变成 {name, type, children} 树，供前端「文件面板」渲染。"""
+    if not path.exists():
+        return {"name": path.name, "type": "dir", "children": []}
+    children = []
+    for p in sorted(path.iterdir()):
+        if p.is_dir():
+            children.append(_build_tree(p))
+        else:
+            children.append({
+                "name": p.name,
+                "type": "file",
+                "size_kb": round(p.stat().st_size / 1024, 1),
+            })
+    return {"name": path.name, "type": "dir", "children": children}
+
+
+@app.get("/files")
+def list_sandbox_files():
+    """列出沙盒目录的文件树（只读，给前端文件面板展示）。"""
+    return _build_tree(SANDBOX_ROOT)
+
+
 # 前端静态文件目录（index.html / style.css / app.js）
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 

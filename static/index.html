@@ -22,6 +22,7 @@
           <button class="chip" data-task="把 'hello world' 转成大写">转大写</button>
           <button class="chip" data-task="统计这句话有多少个单词：the quick brown fox jumps over the lazy dog">数单词</button>
           <button class="chip" data-task="把 'abcdef' 反转">反转</button>
+          <button class="chip" data-task="把 demo_files 里的文本文件（.txt 和 .md）移动到 docs 子目录">整理文件</button>
         </div>
         <textarea id="task-input" rows="3" placeholder="输入一个任务，例如：把 'hello world' 转成大写"></textarea>
         <button id="task-btn" class="primary">提交任务</button>
@@ -45,6 +46,11 @@
     </section>
 
     <aside class="col-side">
+      <div class="card">
+        <h2>沙盒文件 <button id="files-refresh" class="ghost">刷新</button></h2>
+        <p class="hint">Agent 的工作台：demo_files 目录。</p>
+        <ul id="files-list" class="tree"></ul>
+      </div>
       <div class="card">
         <h2>技能库 <button id="skills-refresh" class="ghost">刷新</button></h2>
         <ul id="skills-list" class="list"></ul>
