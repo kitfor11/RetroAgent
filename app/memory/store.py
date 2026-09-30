@@ -48,8 +48,18 @@ class JsonMemoryStore:
 class RedisMemoryStore:
     """用 Redis 的 list 存教训：和 RedisSkillStore 完全对称。"""
 
-    def __init__(self, host: str = "localhost", port: int = 6379, key: str = "evoagent:memories") -> None:
-        self.r = redis.Redis(host=host, port=port, decode_responses=True)
+    def __init__(
+        self,
+        host: str = "localhost",
+        port: int = 6379,
+        url: str = "",
+        key: str = "evoagent:memories",
+    ) -> None:
+        if url:
+            # 托管 Redis 用连接串（含密码/SSL），本地开发用 host+port
+            self.r = redis.Redis.from_url(url, decode_responses=True)
+        else:
+            self.r = redis.Redis(host=host, port=port, decode_responses=True)
         self.key = key
 
     def save(self, memory: Memory) -> Memory:

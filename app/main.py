@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from app.agent.agent import solve_task
 from app.agent.tools import SANDBOX_ROOT
+from app.config import settings
 from app.memory.store import RedisMemoryStore
 from app.rag.indexer import index_directory
 from app.rag.qa import rag_answer
@@ -17,8 +18,19 @@ app = FastAPI(title="EvoAgent")
 
 # 全局存储实例：接口共享同一份技能库和记忆库
 # 从 JSON 文件换成 Redis——只改了这两行，业务逻辑零改动
-skill_store = RedisSkillStore()
-memory_store = RedisMemoryStore()
+# 托管部署配 REDIS_URL（连接串），本地开发用 REDIS_HOST/PORT
+skill_store = RedisSkillStore(
+    host=settings.redis_host, port=settings.redis_port, url=settings.redis_url
+)
+memory_store = RedisMemoryStore(
+    host=settings.redis_host, port=settings.redis_port, url=settings.redis_url
+)
+
+
+@app.get("/health")
+def health():
+    """健康检查：部署平台用它探活，返回 ok 就代表服务起来了。"""
+    return {"status": "ok"}
 
 
 class SolveRequest(BaseModel):

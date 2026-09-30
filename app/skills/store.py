@@ -86,9 +86,19 @@ class RedisSkillStore(SkillStore):
     选对数据结构，是使用 Redis 的核心能力。
     """
 
-    def __init__(self, host: str = "localhost", port: int = 6379, key: str = "evoagent:skills") -> None:
+    def __init__(
+        self,
+        host: str = "localhost",
+        port: int = 6379,
+        url: str = "",
+        key: str = "evoagent:skills",
+    ) -> None:
         # decode_responses=True：让 Redis 返回字符串而不是字节，省去手动 decode
-        self.r = redis.Redis(host=host, port=port, decode_responses=True)
+        if url:
+            # 托管 Redis 用连接串（含密码/SSL），本地开发用 host+port
+            self.r = redis.Redis.from_url(url, decode_responses=True)
+        else:
+            self.r = redis.Redis(host=host, port=port, decode_responses=True)
         self.key = key  # 带命名空间的 key，是 Redis 的最佳实践
 
     def save(self, skill: Skill) -> Skill:

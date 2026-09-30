@@ -102,6 +102,15 @@ app/
 | `/index` | POST | 把沙盒文件索引进文档向量库（先清空再全量索引） |
 | `/ask` | POST | 文档问答：检索相关片段，带引用来源回答 |
 
+## 部署
+
+容器化部署所需的文件已备好，步骤见 [DEPLOY.md](DEPLOY.md)：
+- `Dockerfile` + `.dockerignore` + `requirements-deploy.txt`（精简依赖，不装 paddle/大模型）
+- `/health` 健康检查接口
+- 支持托管 Redis（`REDIS_URL` 连接串，如 Upstash/Redis Cloud）
+
+一句话流程：注册托管 Redis 拿 `REDIS_URL` → 把代码 push 到 GitHub → 平台（Render/Railway）连仓库部署 → 填 `DEEPSEEK_API_KEY`、`REDIS_URL` 两个环境变量。
+
 ## 已知局限 / 未来方向
 
 - 默认检索仍用字符 n-gram，中文↔英文有**语义鸿沟**（可设 `EMBEDDING_BACKEND=sentence_transformers` 换真实模型解决）

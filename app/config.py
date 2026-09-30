@@ -28,6 +28,8 @@ class Settings:
         self.deepseek_model = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
         self.redis_host = os.getenv("REDIS_HOST", "localhost")
         self.redis_port = int(os.getenv("REDIS_PORT", "6379"))
+        # 托管 Redis 连接串（如 Upstash/Redis Cloud 给的 redis://...）。配了就优先用它，忽略 host/port
+        self.redis_url = os.getenv("REDIS_URL", "")
         # embedding 后端：ngram（默认，零依赖）或 sentence_transformers（真实语义，需装依赖）
         self.embedding_backend = os.getenv("EMBEDDING_BACKEND", "ngram")
         self.embedding_model = os.getenv(

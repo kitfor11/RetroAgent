@@ -1,0 +1,13 @@
+# 部署用精简依赖：不装 paddle/sentence-transformers（对应 OCR_BACKEND=dummy、EMBEDDING_BACKEND=ngram）
+# 完整版见 requirements.txt
+openai>=1.40.0
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+redis>=5.0.0
+# numpy 锁 1.26.4：和 requirements.txt 保持一致（本地已验证的版本）
+numpy==1.26.4
+python-dotenv>=1.0.0
+# 文档 RAG 向量库
+chromadb==1.5.9
+# protobuf 锁 7.x 给 chromadb；配合 config.py 里的纯 Python 开关
+protobuf==7.36.2

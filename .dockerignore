@@ -1,0 +1,24 @@
+# 虚拟环境（巨大，绝不能打进构建上下文）
+venv/
+
+# 敏感信息：真实 API key 绝不能进镜像（即使 Dockerfile 只 COPY app/，这也是道保险）
+.env
+
+# 版本控制
+.git/
+.gitignore
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# 运行时数据（本地演示产物，不打包）
+demo_files/
+chroma_db/
+skills.json
+memories.json
+
+# 演示/测试脚本（镜像只需要 app/ 代码，这些不打包）
+tests/
+*.md
