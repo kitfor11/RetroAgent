@@ -7,7 +7,7 @@
 import inspect
 import re
 
-from app.agent.tools import call_tool, TOOLS
+from app.agent.tools import call_tool, get_workdir, TOOLS
 from app.llm import chat
 
 
@@ -59,6 +59,8 @@ def run(
     """
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
+        # 告诉 Agent 当前工作目录：相对路径都相对于它，方便直接操作刚选的文件夹
+        {"role": "system", "content": f"Current working directory (relative paths resolve against it): {get_workdir()}"},
     ]
     if reference:
         # RAG 的「增强」：把检索到的历史技能作为参考做法注入，让模型结合参考生成

@@ -27,17 +27,37 @@ SANDBOX_ROOT = Path(settings.sandbox_root).resolve()
 # 回收站：删除时把文件移到这里（软删除，可恢复），放在项目根目录下。
 TRASH_DIR = Path(__file__).resolve().parent.parent.parent / ".trash"
 
+# 当前工作目录（运行时可变）：初始 = 默认工作目录。
+# 用户在前端「选择文件夹」后切到这里，之后 Agent 的相对路径都以它为基准，
+# 相当于给 Agent 换了「当前所在的文件夹」。
+_current_workdir = SANDBOX_ROOT
+
+
+def get_workdir() -> Path:
+    """返回当前工作目录（Agent 相对路径的基准）。"""
+    return _current_workdir
+
+
+def set_workdir(path: str) -> Path:
+    """切换当前工作目录。path 必须是已存在的目录。"""
+    global _current_workdir
+    p = Path(path).resolve()
+    if not p.is_dir():
+        raise ValueError(f"Not a directory: {path}")
+    _current_workdir = p
+    return p
+
 
 def _resolve_path(path: str) -> Path:
-    """把路径解析成绝对路径（相对路径以默认工作目录为基准）。
+    """把路径解析成绝对路径（相对路径以当前工作目录为基准）。
 
     现在放开到「任意路径」：绝对路径直接用，不再做沙盒越界检查。
-    相对路径（如 "report.pdf"）仍以 SANDBOX_ROOT 为基准，因为
-    list_files 只回传文件名，Agent 自然会拿文件名去操作。
+    相对路径（如 "report.pdf"）以当前工作目录（get_workdir）为基准，
+    因为 list_files 只回传文件名，Agent 自然会拿文件名去操作。
     """
     p = Path(path)
     if not p.is_absolute():
-        p = SANDBOX_ROOT / p  # 相对路径默认相对于工作目录
+        p = get_workdir() / p  # 相对路径默认相对于当前工作目录
     return p.resolve()
 
 
@@ -164,8 +184,8 @@ def search_docs(query: str, k: int = 3) -> str:
     from app.rag.store import get_store
 
     store = get_store()  # 单例，进程内只建一次
-    if store.count() == 0:  # 库为空时先把工作目录文件索引进库（懒建库）
-        index_directory(SANDBOX_ROOT, store)
+    if store.count() == 0:  # 库为空时先把当前工作目录文件索引进库（懒建库）
+        index_directory(get_workdir(), store)
 
     try:  # 模型可能把 k 写成字符串（如 "3"），兜底转 int
         k = int(k)

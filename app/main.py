@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from app.agent.agent import solve_task
-from app.agent.tools import SANDBOX_ROOT
+from app.agent.tools import get_workdir, set_workdir
 from app.config import settings
 from app.memory.store import RedisMemoryStore
 from app.rag.indexer import index_directory
@@ -69,10 +69,10 @@ class AskRequest(BaseModel):
 
 @app.post("/index")
 def index_docs():
-    """把沙盒目录下的文件索引进向量库（先清空再全量索引），返回入库 chunk 数。"""
+    """把当前工作目录下的文件索引进向量库（先清空再全量索引），返回入库 chunk 数。"""
     store = get_store()
     store.reset()
-    n = index_directory(SANDBOX_ROOT, store)
+    n = index_directory(get_workdir(), store)
     return {"indexed_chunks": n}
 
 
@@ -82,10 +82,32 @@ def ask(req: AskRequest):
     return rag_answer(req.question, get_store(), k=req.k)
 
 
+@app.post("/choose-dir")
+def choose_dir():
+    """弹出系统「选择文件夹」对话框，返回选中路径并设为当前工作目录。"""
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+    except ImportError:
+        raise HTTPException(status_code=500, detail="tkinter 不可用（无图形界面环境）")
+
+    root = tk.Tk()
+    root.withdraw()                 # 隐藏主窗口，只显示对话框
+    root.attributes("-topmost", True)  # 对话框置顶，避免被别的窗口挡住
+    path = filedialog.askdirectory(title="选择文件夹（作为 EvoAgent 的工作目录）")
+    root.destroy()
+
+    if not path:                    # 用户点了取消
+        return {"path": None, "canceled": True}
+
+    set_workdir(path)               # 设为当前工作目录
+    return {"path": path, "canceled": False}
+
+
 @app.get("/files")
 def list_dir(path: str | None = None):
-    """浏览目录：返回指定路径（默认工作目录）下的子目录和文件列表 + 父目录，供前端文件浏览器导航。"""
-    p = Path(path).resolve() if path else SANDBOX_ROOT
+    """浏览目录：返回指定路径（默认当前工作目录）下的子目录和文件列表 + 父目录，供前端文件浏览器导航。"""
+    p = Path(path).resolve() if path else get_workdir()
     if not p.is_dir():
         raise HTTPException(status_code=400, detail=f"Not a directory: {path}")
     dirs, files = [], []

@@ -167,6 +167,7 @@ textarea { resize: vertical; }
 .preview { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px; }
 .preview-head { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 6px; }
 .preview pre { background: var(--panel-2); padding: 10px; border-radius: 6px; white-space: pre-wrap; font-size: 12.5px; max-height: 200px; overflow-y: auto; margin: 0; font-family: "SFMono-Regular", Consolas, monospace; color: #c9d1e8; }
+.choose-btn { width: 100%; margin-bottom: 10px; }
 .hidden { display: none; }
 .list li {
   padding: 8px 10px;

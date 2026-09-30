@@ -166,6 +166,25 @@ async function previewFile(fullPath, name) {
   }
 }
 
+async function chooseDir() {
+  const btn = document.getElementById("files-choose");
+  btn.disabled = true;
+  btn.textContent = "等待选择…";
+  try {
+    const resp = await fetch("/choose-dir", { method: "POST" });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    if (data.canceled) return;                    // 用户点了取消，不动
+    document.getElementById("files-path").value = data.path;
+    await refreshFiles(data.path);                 // 刷新到选中的文件夹
+  } catch (e) {
+    alert("打开文件夹选择窗口失败：" + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "📂 选择文件夹";
+  }
+}
+
 // ---------- 侧栏 ----------
 async function refreshSkills() {
   const list = document.getElementById("skills-list");
@@ -198,6 +217,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("task-btn").addEventListener("click", submitTask);
   document.getElementById("qa-btn").addEventListener("click", askQuestion);
   document.getElementById("index-btn").addEventListener("click", buildIndex);
+  document.getElementById("files-choose").addEventListener("click", chooseDir);
   document.getElementById("files-refresh").addEventListener("click", () => refreshFiles(currentPath));
   document.getElementById("files-up").addEventListener("click", goUp);
   document.getElementById("files-go").addEventListener("click", goTo);
