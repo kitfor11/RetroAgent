@@ -29,11 +29,11 @@
 - **反思提炼**：角色切换让 LLM 复盘轨迹，抽取技能/教训
 - **自我评估**：`LLM-as-judge` 判断「是否真的成功」
 - **向量检索**：余弦相似度 + 阈值；向量化可切换（字符 n-gram / 真实语义模型）
-- **文件工具 + 沙盒**：list / read / mkdir / move 真实文件操作，全部限制在沙盒目录内
+- **文件工具**：list / read / mkdir / move / delete（软删除进回收站）真实文件操作，放开到任意路径；前端「选择文件夹」设定工作目录，相对路径都基于它
 - **OCR（多模态）**：PaddleOCR 看图识字，让文件整理从「按扩展名」升级到「按内容」
-- **文档 RAG（Chroma 向量库）**：切片 → 向量化 → 检索 top-k → 带引用回答；图片经 OCR 也能入库；既暴露成 `/ask` 接口，也作为 `search_docs` 工具给 Agent 用
+- **文档 RAG（Chroma 向量库）**：切片 → 向量化 → 检索 top-k → 带引用回答；图片经 OCR 也能入库；`ensure_indexed` 让问答自动跟随工作目录；既暴露成 `/ask` 接口，也作为 `search_docs` 工具给 Agent 用
 - **Redis**：技能库用 hash（天然查重），记忆库用 list（只追加）
-- **FastAPI**：RESTful 接口；**MCP**：工具暴露给任意 MCP 客户端
+- **FastAPI**：RESTful 接口 + 原生静态前端（`static/`，无构建步骤）；**MCP**：工具暴露给任意 MCP 客户端
 - **大模型**：DeepSeek（OpenAI 兼容接口）+ 结构化输出 + 防御性解析（含 stop 序列防「脑补」）
 
 ## 关键技术决策
@@ -44,6 +44,7 @@
 4. **为什么 embedding 也要「接口 + 可替换实现」**：字符 n-gram 只比字面、不比语义，中文↔英文会 miss。所以把向量化抽象成 `Embedder` 接口，n-gram 和真实语义模型都能插拔，通过 `EMBEDDING_BACKEND` 一键切换。
 5. **为什么 ReAct 要加 `stop=["Observation:"]`**：纯文本 ReAct 的经典坑——模型会「体贴地」把 Observation 也自己编出来，工具根本没被调用（演示时真的抓到过一次，还编出了 8 个不存在的文件）。stop 序列在模型刚想写「Observation:」时截断，逼它交棒给真实工具。
 6. **为什么 OCR 和 Chroma 能共存（protobuf 版本冲突）**：paddle 2.6 的生成代码是 protoc 3.x 产的（要求 protobuf ≤3.20），而 chromadb 要求 protobuf 7.x，两者版本要求没有交集。解法：锁 protobuf 7.x 给 chromadb，再设 `PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python`（纯 Python 实现兼容老生成代码）；开关放在 `config.py` 最顶部，必须在任何 protobuf 导入之前设置。
+7. **为什么删除做成软删除（移到回收站）**：Agent 是 LLM 驱动的，可能误判；`os.remove` 不可逆，误删难恢复。所以 `delete_file` 实际是把文件 `shutil.move` 到项目下 `.trash/`，误删了随时能找回。
 
 ## 项目结构
 
@@ -67,6 +68,10 @@ app/
 ├── config.py           # 环境变量配置
 ├── main.py             # FastAPI 入口
 └── mcp_server.py       # MCP server
+static/                 # 前端界面（原生 HTML/CSS/JS，无构建步骤）
+├── index.html          # 页面骨架
+├── style.css           # 深色主题样式
+└── app.js              # 交互逻辑（fetch 调后端接口）
 ```
 
 ## 快速开始
@@ -75,7 +80,7 @@ app/
 2. 配置环境：复制 `.env.example` 为 `.env`，填入 `DEEPSEEK_API_KEY`
 3. 启动 Redis（本地 `6379` 端口需有 Redis 运行）
 4. 启动服务：`uvicorn app.main:app --reload`
-5. 打开 `http://127.0.0.1:8000/docs` 测试
+5. 打开 `http://127.0.0.1:8000` 使用前端界面（`/docs` 可看接口文档）
 
 **跑演示**（会真实调用 DeepSeek）：
 - 完整进化闭环（解决→复用→记教训→跨语言复用）：`venv/Scripts/python tests/demo_full.py`
@@ -92,15 +97,27 @@ app/
 
 > **可选：启用 OCR**。文件整理要「看图识字」需 `pip install paddleocr==2.7.3 paddlepaddle==2.6.2`（首次运行下载约 15MB 模型；注意 numpy 要锁 1.26.4，见 requirements.txt）。验证跑 `venv/Scripts/python tests/verify_ocr.py`。
 
+## 工作目录
+
+前端「📂 选择文件夹」会调用系统对话框选定一个目录，作为**当前工作目录**：
+
+- Agent 的相对路径都以它为基准（任务里说「把里面的…」即可，不用写绝对路径）
+- 文档问答（`/ask`、`search_docs`）也基于它，目录变了自动重建索引
+- 初始值 = `.env` 里的 `SANDBOX_ROOT`（默认 `demo_files`）
+
 ## API
 
 | 接口 | 方法 | 说明 |
 |------|------|------|
-| `/solve` | POST | 提交任务，走完整进化链路，返回 `method`（`solved` / `reused_skill` / `failed`） |
+| `/solve` | POST | 提交任务，走完整进化链路，返回 `method`（`solved` / `reused_skill` / `failed`）+ 思维链 `trace` |
 | `/skills` | GET | 查看技能库 |
 | `/memories` | GET | 查看经验记忆 |
-| `/index` | POST | 把沙盒文件索引进文档向量库（先清空再全量索引） |
-| `/ask` | POST | 文档问答：检索相关片段，带引用来源回答 |
+| `/choose-dir` | POST | 弹出系统「选择文件夹」对话框，设为当前工作目录 |
+| `/files` | GET | 浏览目录（`?path=` 指定，默认当前工作目录） |
+| `/file` | GET | 预览文本文件内容（`?path=`） |
+| `/index` | POST | 把当前工作目录索引进文档向量库（强制重建） |
+| `/ask` | POST | 文档问答：基于当前工作目录，带引用来源回答 |
+| `/health` | GET | 健康检查 |
 
 ## 部署
 
@@ -116,4 +133,4 @@ app/
 - 默认检索仍用字符 n-gram，中文↔英文有**语义鸿沟**（可设 `EMBEDDING_BACKEND=sentence_transformers` 换真实模型解决）
 - 失败判定依赖 LLM 裁判，存在概率性
 - 技能按名字查重，同义不同名（如 `reverse-text` vs `reverse-string`）不会合并
-- 文档向量库是「快照」：文件改动后需重新 `/index` 才会生效（`search_docs` 工具也只懒建一次）
+- 文档向量库是「快照」：切换目录会自动重建索引，但同一目录内文件被改动后需重新 `/index` 才会生效
