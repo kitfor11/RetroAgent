@@ -16,3 +16,6 @@ demo_skills.json
 
 # ===== 文件工具沙盒目录（Agent 的演示用文件，不提交）=====
 demo_files/
+
+# ===== Chroma 向量库持久化目录（本地索引数据，不提交）=====
+chroma_db/

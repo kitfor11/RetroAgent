@@ -31,6 +31,7 @@
 - **向量检索**：余弦相似度 + 阈值；向量化可切换（字符 n-gram / 真实语义模型）
 - **文件工具 + 沙盒**：list / read / mkdir / move 真实文件操作，全部限制在沙盒目录内
 - **OCR（多模态）**：PaddleOCR 看图识字，让文件整理从「按扩展名」升级到「按内容」
+- **文档 RAG（Chroma 向量库）**：切片 → 向量化 → 检索 top-k → 带引用回答；图片经 OCR 也能入库
 - **Redis**：技能库用 hash（天然查重），记忆库用 list（只追加）
 - **FastAPI**：RESTful 接口；**MCP**：工具暴露给任意 MCP 客户端
 - **大模型**：DeepSeek（OpenAI 兼容接口）+ 结构化输出 + 防御性解析（含 stop 序列防「脑补」）
@@ -42,6 +43,7 @@
 3. **为什么需要 LLM-as-judge**：光看「有没有 Final Answer」无法判断成败——模型会「优雅地失败」（老实说「我没有这个工具」就交差）。所以要靠模型的判断力鉴别真伪。
 4. **为什么 embedding 也要「接口 + 可替换实现」**：字符 n-gram 只比字面、不比语义，中文↔英文会 miss。所以把向量化抽象成 `Embedder` 接口，n-gram 和真实语义模型都能插拔，通过 `EMBEDDING_BACKEND` 一键切换。
 5. **为什么 ReAct 要加 `stop=["Observation:"]`**：纯文本 ReAct 的经典坑——模型会「体贴地」把 Observation 也自己编出来，工具根本没被调用（演示时真的抓到过一次，还编出了 8 个不存在的文件）。stop 序列在模型刚想写「Observation:」时截断，逼它交棒给真实工具。
+6. **为什么 OCR 和 Chroma 能共存（protobuf 版本冲突）**：paddle 2.6 的生成代码是 protoc 3.x 产的（要求 protobuf ≤3.20），而 chromadb 要求 protobuf 7.x，两者版本要求没有交集。解法：锁 protobuf 7.x 给 chromadb，再设 `PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python`（纯 Python 实现兼容老生成代码）；开关放在 `config.py` 最顶部，必须在任何 protobuf 导入之前设置。
 
 ## 项目结构
 
@@ -56,6 +58,11 @@ app/
 ├── memory/             # 记忆库：存储 / 检索
 ├── multimodal/         # 多模态：OCR（看图识字），VLM 待加
 │   └── ocr.py          # OCR 引擎（接口 + PaddleOCR + 降级占位）
+├── rag/                # 文档 RAG：切片 / 向量库 / 索引 / 问答
+│   ├── chunker.py      # 切片器（固定长度 + overlap）
+│   ├── store.py        # Chroma 向量库封装（存 / 检索 / 持久化）
+│   ├── indexer.py      # 索引器（文本直读，图片走 OCR）
+│   └── qa.py           # 问答（检索 → 增强 → 生成，带引用）
 ├── llm.py              # LLM 调用封装
 ├── config.py           # 环境变量配置
 ├── main.py             # FastAPI 入口
@@ -74,6 +81,7 @@ app/
 - 完整进化闭环（解决→复用→记教训→跨语言复用）：`venv/Scripts/python tests/demo_full.py`
 - 文件整理助手（真实文件工具 + CoT 思维链）：`venv/Scripts/python tests/demo_files.py`
 - OCR 文件整理（看图识字、按内容归档）：`venv/Scripts/python tests/demo_ocr.py`
+- 文档 RAG 问答（Chroma 向量库 + 带引用回答，含图片 OCR 入库）：`venv/Scripts/python tests/demo_rag.py`
 
 > **可选：启用真实语义检索**。默认用字符 n-gram（零依赖）。要解决中文↔英文语义鸿沟，执行 `pip install sentence-transformers`，再把 `.env` 里的 `EMBEDDING_BACKEND` 改为 `sentence_transformers`（首次运行会下载约 120MB 模型）。验证效果跑 `venv/Scripts/python tests/verify_embedding.py`。
 

@@ -10,3 +10,8 @@ sentence-transformers>=2.2.0
 # OCR（第 6 步）：中文友好；锁经典 API 版本（3.x 改了 predict 接口）
 paddlepaddle==2.6.2
 paddleocr==2.7.3
+
+# 文档 RAG 向量库（第 7 步）
+chromadb==1.5.9
+# protobuf 锁 7.x 给 chromadb；paddle 的老生成代码靠 PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python 兼容（见 config.py）
+protobuf==7.36.2
