@@ -11,8 +11,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 \
 COPY requirements-deploy.txt .
 RUN pip install --no-cache-dir -r requirements-deploy.txt
 
-# 再拷代码（放后面，代码改动不会触发重装依赖）
+# 再拷代码和前端静态文件（放后面，代码改动不会触发重装依赖）
 COPY app ./app
+COPY static ./static
 
 # 部署默认用零依赖的 ngram 嵌入 + dummy OCR（可在平台环境变量里覆盖）
 ENV OCR_BACKEND=dummy EMBEDDING_BACKEND=ngram

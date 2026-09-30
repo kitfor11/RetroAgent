@@ -37,11 +37,12 @@ def solve_task(task: str, skill_store: SkillStore, memory_store) -> Dict:
         existing.use_count += 1  # 复用次数 +1
         skill_store.update(existing)  # 写回 Redis，持久化复用次数
         # RAG：不直接照抄 steps，而是把它作为「参考做法」注入，让模型结合参考重新生成
-        answer, _ = run(task, lessons=lessons, reference=existing.steps)
+        answer, trace = run(task, lessons=lessons, reference=existing.steps)
         return {
             "answer": answer,
             "method": "reused_skill",
             "skill": existing.name,
+            "trace": trace,
         }
 
     # 3. 未命中：ReAct 自己解决（把历史教训喂进去）
@@ -56,6 +57,7 @@ def solve_task(task: str, skill_store: SkillStore, memory_store) -> Dict:
             "answer": answer,
             "method": "failed",
             "learned_lesson": lesson.lesson,
+            "trace": trace,
         }
 
     new_skill = reflect(task, trace)
@@ -64,4 +66,5 @@ def solve_task(task: str, skill_store: SkillStore, memory_store) -> Dict:
         "answer": answer,
         "method": "solved",
         "learned_skill": new_skill.name,
+        "trace": trace,
     }

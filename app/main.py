@@ -2,7 +2,10 @@
 
 这是「接口层」——只负责对外暴露接口，业务逻辑都在 agent/ 里。
 """
+from pathlib import Path
+
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from app.agent.agent import solve_task
@@ -77,3 +80,11 @@ def index_docs():
 def ask(req: AskRequest):
     """文档问答：检索沙盒文件内容，带引用来源回答。"""
     return rag_answer(req.question, get_store(), k=req.k)
+
+
+# 前端静态文件目录（index.html / style.css / app.js）
+STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
+
+# 挂载静态目录：html=True 让根路径 "/" 直接返回 index.html
+# 必须放在所有 API 路由之后，否则会吞掉 /solve、/ask 等接口
+app.mount("/", StaticFiles(directory=str(STATIC_DIR), html=True), name="static")

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EvoAgent — 自我进化型 AI Agent</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>EvoAgent</h1>
+    <p>自我进化型 AI Agent —— 任务做对学成技能，做错记成教训，越用越强</p>
+  </header>
+
+  <main class="layout">
+    <section class="col-main">
+      <!-- 提交任务 -->
+      <div class="card">
+        <h2>提交任务</h2>
+        <p class="hint">Agent 会思考（CoT）→ 调工具 → 复盘：成功提炼技能，失败提炼教训。</p>
+        <div class="examples">
+          <button class="chip" data-task="把 'hello world' 转成大写">转大写</button>
+          <button class="chip" data-task="统计这句话有多少个单词：the quick brown fox jumps over the lazy dog">数单词</button>
+          <button class="chip" data-task="把 'abcdef' 反转">反转</button>
+        </div>
+        <textarea id="task-input" rows="3" placeholder="输入一个任务，例如：把 'hello world' 转成大写"></textarea>
+        <button id="task-btn" class="primary">提交任务</button>
+        <div id="task-result" class="result"></div>
+      </div>
+
+      <!-- 文档问答 -->
+      <div class="card">
+        <h2>文档问答（RAG）</h2>
+        <p class="hint">把文件放进 demo_files 目录后，先「重建索引」，再提问。</p>
+        <div class="qa-row">
+          <button id="index-btn" class="ghost">重建索引</button>
+          <span id="index-status" class="muted"></span>
+        </div>
+        <div class="qa-row">
+          <input id="qa-input" placeholder="例如：EvoAgent 的核心功能有哪些？" />
+          <button id="qa-btn" class="primary">提问</button>
+        </div>
+        <div id="qa-result" class="result"></div>
+      </div>
+    </section>
+
+    <aside class="col-side">
+      <div class="card">
+        <h2>技能库 <button id="skills-refresh" class="ghost">刷新</button></h2>
+        <ul id="skills-list" class="list"></ul>
+      </div>
+      <div class="card">
+        <h2>经验记忆 <button id="memories-refresh" class="ghost">刷新</button></h2>
+        <ul id="memories-list" class="list"></ul>
+      </div>
+    </aside>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
