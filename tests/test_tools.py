@@ -1,42 +1,47 @@
-"""工具单元测试：重点测「沙盒安全网」+ 几个字符串工具。
+"""工具单元测试：路径解析（任意路径）+ 字符串工具 + 软删除。
 
-安全是文件工具的第一道防线：Agent 是 LLM 驱动的，可能「想歪」，
-所以 _ensure_in_sandbox 必须拦住任何越界路径——这正是最值得测的部分。
+现在按需求放开到「任意路径」：绝对路径直接用，相对路径以默认工作目录为基准。
+删除是软删除（移到回收站），可恢复——这是对不可逆操作留的后路，值得测。
 """
-import pytest
-
 from app.agent.tools import (
     SANDBOX_ROOT,
-    _ensure_in_sandbox,
+    _resolve_path,
     count_words,
+    delete_file,
     reverse_text,
     to_lower,
     to_upper,
 )
 
 
-def test_relative_path_resolves_under_sandbox():
-    p = _ensure_in_sandbox("report.pdf")
+def test_relative_path_resolves_under_workdir():
+    p = _resolve_path("report.pdf")
     assert p == SANDBOX_ROOT / "report.pdf"
-    assert p.is_relative_to(SANDBOX_ROOT)
 
 
-def test_parent_traversal_is_blocked():
-    # ".." 越界必须被拦下
-    with pytest.raises(ValueError):
-        _ensure_in_sandbox("../secret.txt")
+def test_absolute_path_anywhere_is_allowed(tmp_path):
+    outside = tmp_path / "somefile.txt"
+    assert _resolve_path(str(outside)) == outside
 
 
-def test_absolute_path_outside_is_blocked(tmp_path):
-    # tmp_path 是 pytest 的临时目录，肯定在沙盒外
-    outside = tmp_path / "secret.txt"
-    with pytest.raises(ValueError):
-        _ensure_in_sandbox(str(outside))
+def test_parent_traversal_is_now_allowed():
+    # 放开后 ".." 不再拦截，会解析到工作目录的父目录
+    p = _resolve_path("../up.txt")
+    assert p == SANDBOX_ROOT.parent / "up.txt"
 
 
-def test_absolute_path_inside_is_allowed():
-    inside = SANDBOX_ROOT / "ok.txt"
-    assert _ensure_in_sandbox(str(inside)) == inside
+def test_delete_moves_to_trash(tmp_path, monkeypatch):
+    # 把回收站指到测试临时目录，避免污染真实 .trash
+    trash = tmp_path / ".trash"
+    monkeypatch.setattr("app.agent.tools.TRASH_DIR", trash)
+
+    f = tmp_path / "del.txt"
+    f.write_text("hi", encoding="utf-8")
+    msg = delete_file(str(f))
+
+    assert not f.exists()                    # 原位置没了
+    assert "trash" in msg
+    assert any(p.name.endswith("del.txt") for p in trash.iterdir())  # 进了回收站
 
 
 def test_string_tools():

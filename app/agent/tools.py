@@ -6,10 +6,14 @@
 TOOLS 是注册表：名字 -> 函数。Agent 说「我要调 count_words」，
 我们就从这张表里按名字查到函数来执行。
 
-安全设计：所有文件工具都被限制在「沙盒目录」（SANDBOX_ROOT）内，
-不能读写沙盒外的真实文件。这是对不可逆操作（移动/删除）的第一道安全网。
+安全设计（已按需求放开到任意路径）：
+- 绝对路径直接用，不再限制在沙盒内（用户明确要求操作真实磁盘）。
+- 相对路径仍以 SANDBOX_ROOT 为基准，方便 Agent 拿文件名直接操作。
+- 删除是「软删除」：文件被移到项目下的 .trash 回收站，而不是永久删除。
+  这是对不可逆操作留的后路——误删还能找回来。
 """
 import shutil
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict
 
@@ -17,28 +21,24 @@ from app.config import settings
 
 TOOLS: Dict[str, Callable] = {}
 
-# 沙盒根目录：文件工具只能碰这个目录（绝对路径）。默认 demo_files，可在 .env 里改。
+# 默认工作目录：相对路径的基准。默认 demo_files，可在 .env 的 SANDBOX_ROOT 里改。
 SANDBOX_ROOT = Path(settings.sandbox_root).resolve()
 
+# 回收站：删除时把文件移到这里（软删除，可恢复），放在项目根目录下。
+TRASH_DIR = Path(__file__).resolve().parent.parent.parent / ".trash"
 
-def _ensure_in_sandbox(path: str) -> Path:
-    """把路径解析成绝对路径，并确保它在沙盒内，否则抛错。
 
-    这是安全网：Agent 是 LLM 驱动的，可能「想歪」，不能让它乱读写
-    沙盒外的真实文件。破坏沙盒 -> ValueError -> 被 ReAct 循环当成
-    一次失败（还能记成教训）。
+def _resolve_path(path: str) -> Path:
+    """把路径解析成绝对路径（相对路径以默认工作目录为基准）。
 
-    注意：相对路径（如 "report.pdf"）会先拼到沙盒根目录下再解析，
-    因为 list_files 只回传文件名，Agent 自然会拿文件名去操作。
-    只有用 `..` 越界（如 "../secret.txt"）才会被拦下。
+    现在放开到「任意路径」：绝对路径直接用，不再做沙盒越界检查。
+    相对路径（如 "report.pdf"）仍以 SANDBOX_ROOT 为基准，因为
+    list_files 只回传文件名，Agent 自然会拿文件名去操作。
     """
     p = Path(path)
     if not p.is_absolute():
-        p = SANDBOX_ROOT / p  # 相对路径默认相对于沙盒根目录
-    p = p.resolve()
-    if not p.is_relative_to(SANDBOX_ROOT):
-        raise ValueError(f"Path outside sandbox: {path}")
-    return p
+        p = SANDBOX_ROOT / p  # 相对路径默认相对于工作目录
+    return p.resolve()
 
 
 def register(func: Callable) -> Callable:
@@ -73,14 +73,16 @@ def to_lower(text: str) -> str:
 
 @register
 def list_files(path: str) -> str:
-    """List all files directly inside a directory (one per line: name, size in KB).
-    Input: path - the directory to inspect. Output: a text list of files."""
-    dir_path = _ensure_in_sandbox(path)
+    """List all entries directly inside a directory (files and subdirectories).
+    Input: path - the directory to inspect. Output: a text list; subdirectories are marked [dir]."""
+    dir_path = _resolve_path(path)
     if not dir_path.exists():
         return f"Directory not found: {path}"
     lines = []
     for p in sorted(dir_path.iterdir()):  # iterdir 遍历目录下的每一项
-        if p.is_file():                   # 只挑「文件」，跳过子目录
+        if p.is_dir():                    # 子目录标 [dir]，方便 Agent 继续深入
+            lines.append(f"[dir] {p.name}")
+        else:
             size_kb = p.stat().st_size / 1024
             lines.append(f"{p.name}  ({size_kb:.1f} KB)")
     if not lines:
@@ -92,7 +94,7 @@ def list_files(path: str) -> str:
 def read_text(path: str) -> str:
     """Read a text file and return its content (truncated to 2000 chars).
     Input: path - the file to read. Output: the file's text content."""
-    p = _ensure_in_sandbox(path)
+    p = _resolve_path(path)
     if not p.exists():
         return f"File not found: {path}"
     # errors="ignore"：遇到非 UTF-8 的字节就跳过，不崩；[:2000] 防止超长文件撑爆 prompt
@@ -103,7 +105,7 @@ def read_text(path: str) -> str:
 def make_dir(path: str) -> str:
     """Create a directory (and any missing parents).
     Input: path - the directory to create. Output: a confirmation message."""
-    p = _ensure_in_sandbox(path)
+    p = _resolve_path(path)
     p.mkdir(parents=True, exist_ok=True)  # parents=True 递归建目录；exist_ok=True 已存在不报错
     return f"Created directory: {path}"
 
@@ -112,8 +114,8 @@ def make_dir(path: str) -> str:
 def move_file(src: str, dst: str) -> str:
     """Move or rename a file from src to dst.
     Input: src - current path, dst - target path. Output: a confirmation message."""
-    src_p = _ensure_in_sandbox(src)
-    dst_p = _ensure_in_sandbox(dst)
+    src_p = _resolve_path(src)
+    dst_p = _resolve_path(dst)
     if not src_p.exists():
         return f"File not found: {src}"
     dst_p.parent.mkdir(parents=True, exist_ok=True)  # 先保证目标目录存在
@@ -122,10 +124,24 @@ def move_file(src: str, dst: str) -> str:
 
 
 @register
+def delete_file(path: str) -> str:
+    """Delete a file or directory by moving it to the trash (recoverable, not permanent).
+    Input: path - the file or directory to delete. Output: a confirmation message."""
+    p = _resolve_path(path)
+    if not p.exists():
+        return f"Not found: {path}"
+    TRASH_DIR.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # 时间戳前缀，避免重名互相覆盖
+    dest = TRASH_DIR / f"{stamp}_{p.name}"
+    shutil.move(str(p), str(dest))
+    return f"Deleted {path} -> moved to trash: {dest}"
+
+
+@register
 def read_image_text(path: str) -> str:
     """Read the text inside an image file using OCR (看图识字).
     Input: path - the image file (.png/.jpg/.jpeg/.bmp). Output: the recognized text."""
-    p = _ensure_in_sandbox(path)
+    p = _resolve_path(path)
     if not p.exists():
         return f"File not found: {path}"
     if p.suffix.lower() not in {".png", ".jpg", ".jpeg", ".bmp"}:
@@ -140,7 +156,7 @@ def read_image_text(path: str) -> str:
 
 @register
 def search_docs(query: str, k: int = 3) -> str:
-    """Search the document knowledge base (indexed from sandbox files) for chunks related to a question.
+    """Search the document knowledge base (indexed from workdir files) for chunks related to a question.
     Input: query - the question to search for; k - how many chunks to return.
     Output: the top related chunks, each prefixed with its source file."""
     # 懒 import：只有真正调用这个工具时才加载向量库（嵌入模型很重）
@@ -148,7 +164,7 @@ def search_docs(query: str, k: int = 3) -> str:
     from app.rag.store import get_store
 
     store = get_store()  # 单例，进程内只建一次
-    if store.count() == 0:  # 库为空时先把沙盒文件索引进库（懒建库）
+    if store.count() == 0:  # 库为空时先把工作目录文件索引进库（懒建库）
         index_directory(SANDBOX_ROOT, store)
 
     try:  # 模型可能把 k 写成字符串（如 "3"），兜底转 int

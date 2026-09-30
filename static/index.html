@@ -47,9 +47,16 @@
 
     <aside class="col-side">
       <div class="card">
-        <h2>沙盒文件 <button id="files-refresh" class="ghost">刷新</button></h2>
-        <p class="hint">Agent 的工作台：demo_files 目录。</p>
+        <h2>本地文件 <button id="files-refresh" class="ghost">刷新</button></h2>
+        <p class="hint">浏览本机磁盘：点目录进入，点文件预览。</p>
+        <div class="browser-bar">
+          <button id="files-up" class="ghost">⬆ 上一级</button>
+          <input id="files-path" placeholder="输入路径，如 D:/demo_files" />
+          <button id="files-go" class="ghost">前往</button>
+        </div>
+        <div id="files-cwd" class="muted cwd"></div>
         <ul id="files-list" class="tree"></ul>
+        <div id="file-preview" class="preview hidden"></div>
       </div>
       <div class="card">
         <h2>技能库 <button id="skills-refresh" class="ghost">刷新</button></h2>

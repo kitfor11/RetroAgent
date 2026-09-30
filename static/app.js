@@ -41,7 +41,7 @@ async function submitTask() {
     btn.disabled = false;
     refreshSkills();    // 任务结束后技能/记忆可能变了，刷新侧栏
     refreshMemories();
-    refreshFiles();     // Agent 可能整理/移动了沙盒文件
+    refreshFiles(currentPath);  // Agent 可能整理/移动了文件，刷新当前浏览的目录
   }
 }
 
@@ -102,24 +102,68 @@ async function askQuestion() {
   }
 }
 
-// ---------- 沙盒文件 ----------
-async function refreshFiles() {
+// ---------- 本地文件浏览 ----------
+let currentPath = "";
+let currentParent = "";
+
+async function refreshFiles(path) {
   const list = document.getElementById("files-list");
+  const cwdEl = document.getElementById("files-cwd");
   try {
-    const resp = await fetch("/files");
-    const tree = await resp.json();
-    list.innerHTML = renderTree(tree);
+    const url = path ? `/files?path=${encodeURIComponent(path)}` : "/files";
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    currentPath = data.path;
+    currentParent = data.parent;
+    cwdEl.textContent = data.path;
+    renderEntries(list, data);
   } catch (e) {
     list.innerHTML = `<li class="error">${escapeHtml(e.message)}</li>`;
   }
 }
 
-function renderTree(node) {
-  if (node.type === "file") {
-    return `<li class="file"><span>📄 ${escapeHtml(node.name)}</span><span class="size">${node.size_kb} KB</span></li>`;
+function renderEntries(list, data) {
+  const items = [];
+  data.dirs.forEach((d) => {
+    items.push(`<li class="entry" data-type="dir" data-name="${encodeURIComponent(d)}">📁 ${escapeHtml(d)}</li>`);
+  });
+  data.files.forEach((f) => {
+    items.push(`<li class="entry file-entry" data-type="file" data-name="${encodeURIComponent(f.name)}">📄 ${escapeHtml(f.name)} <span class="size">${f.size_kb} KB</span></li>`);
+  });
+  list.innerHTML = items.length ? items.join("") : `<li class="muted">（空目录）</li>`;
+}
+
+function joinPath(dir, name) {
+  return dir.endsWith("/") || dir.endsWith("\\") ? dir + name : dir + "/" + name;
+}
+
+function goUp() {
+  if (currentParent) refreshFiles(currentParent);
+}
+
+function goTo() {
+  const input = document.getElementById("files-path");
+  const p = input.value.trim();
+  if (p) refreshFiles(p);
+}
+
+async function previewFile(fullPath, name) {
+  const preview = document.getElementById("file-preview");
+  try {
+    const resp = await fetch(`/file?path=${encodeURIComponent(fullPath)}`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    preview.classList.remove("hidden");
+    preview.innerHTML = `
+      <div class="preview-head">${escapeHtml(name)} <button class="ghost" id="preview-close">关闭</button></div>
+      <pre>${escapeHtml(data.content)}</pre>
+    `;
+    document.getElementById("preview-close").addEventListener("click", () => preview.classList.add("hidden"));
+  } catch (e) {
+    preview.classList.remove("hidden");
+    preview.innerHTML = `<p class="error">${escapeHtml(e.message)}</p>`;
   }
-  const kids = (node.children || []).map(renderTree).join("");
-  return `<li class="dir"><span class="dir-name">📁 ${escapeHtml(node.name)}</span><ul>${kids || '<li class="muted">（空）</li>'}</ul></li>`;
 }
 
 // ---------- 侧栏 ----------
@@ -154,7 +198,20 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("task-btn").addEventListener("click", submitTask);
   document.getElementById("qa-btn").addEventListener("click", askQuestion);
   document.getElementById("index-btn").addEventListener("click", buildIndex);
-  document.getElementById("files-refresh").addEventListener("click", refreshFiles);
+  document.getElementById("files-refresh").addEventListener("click", () => refreshFiles(currentPath));
+  document.getElementById("files-up").addEventListener("click", goUp);
+  document.getElementById("files-go").addEventListener("click", goTo);
+  document.getElementById("files-path").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") goTo();
+  });
+  document.getElementById("files-list").addEventListener("click", (e) => {
+    const li = e.target.closest("li.entry");
+    if (!li) return;
+    const name = decodeURIComponent(li.dataset.name);
+    const full = joinPath(currentPath, name);
+    if (li.dataset.type === "dir") refreshFiles(full);
+    else previewFile(full, name);
+  });
   document.getElementById("skills-refresh").addEventListener("click", refreshSkills);
   document.getElementById("memories-refresh").addEventListener("click", refreshMemories);
 

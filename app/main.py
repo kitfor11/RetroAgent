@@ -4,7 +4,7 @@
 """
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -82,27 +82,42 @@ def ask(req: AskRequest):
     return rag_answer(req.question, get_store(), k=req.k)
 
 
-def _build_tree(path: Path) -> dict:
-    """递归把沙盒目录变成 {name, type, children} 树，供前端「文件面板」渲染。"""
-    if not path.exists():
-        return {"name": path.name, "type": "dir", "children": []}
-    children = []
-    for p in sorted(path.iterdir()):
-        if p.is_dir():
-            children.append(_build_tree(p))
-        else:
-            children.append({
-                "name": p.name,
-                "type": "file",
-                "size_kb": round(p.stat().st_size / 1024, 1),
-            })
-    return {"name": path.name, "type": "dir", "children": children}
-
-
 @app.get("/files")
-def list_sandbox_files():
-    """列出沙盒目录的文件树（只读，给前端文件面板展示）。"""
-    return _build_tree(SANDBOX_ROOT)
+def list_dir(path: str | None = None):
+    """浏览目录：返回指定路径（默认工作目录）下的子目录和文件列表 + 父目录，供前端文件浏览器导航。"""
+    p = Path(path).resolve() if path else SANDBOX_ROOT
+    if not p.is_dir():
+        raise HTTPException(status_code=400, detail=f"Not a directory: {path}")
+    dirs, files = [], []
+    try:
+        for entry in sorted(p.iterdir()):
+            if entry.is_dir():
+                dirs.append(entry.name)
+            else:
+                files.append({
+                    "name": entry.name,
+                    "size_kb": round(entry.stat().st_size / 1024, 1),
+                })
+    except PermissionError:
+        raise HTTPException(status_code=403, detail=f"Permission denied: {path}")
+    return {"path": str(p), "parent": str(p.parent), "dirs": dirs, "files": files}
+
+
+@app.get("/file")
+def read_file(path: str):
+    """预览文本文件内容（只读，最多 5000 字符）。图片/二进制只返回提示，不传原始字节。"""
+    p = Path(path).resolve()
+    if not p.exists():
+        raise HTTPException(status_code=404, detail=f"Not found: {path}")
+    if p.is_dir():
+        raise HTTPException(status_code=400, detail="Path is a directory")
+    if p.suffix.lower() in {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".pdf"}:
+        return {"content": "(二进制/图片文件，前端不做预览)", "is_binary": True}
+    try:
+        content = p.read_text(encoding="utf-8", errors="ignore")[:5000]
+    except OSError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"content": content, "is_binary": False}
 
 
 # 前端静态文件目录（index.html / style.css / app.js）

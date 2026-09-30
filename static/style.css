@@ -156,10 +156,18 @@ textarea { resize: vertical; }
 
 .list { list-style: none; padding: 0; margin: 0; max-height: 300px; overflow-y: auto; }
 .tree { list-style: none; padding: 0; margin: 0; max-height: 260px; overflow-y: auto; }
-.tree ul { list-style: none; padding-left: 16px; margin: 4px 0 0; }
-.tree li { padding: 2px 0; font-size: 13px; }
-.tree .file { display: flex; justify-content: space-between; gap: 8px; }
-.tree .file .size { color: var(--muted); font-size: 12px; flex-shrink: 0; }
+.tree li { padding: 3px 6px; font-size: 13px; border-radius: 4px; }
+.entry { cursor: pointer; }
+.entry:hover { background: var(--panel-2); }
+.file-entry { display: flex; justify-content: space-between; gap: 8px; }
+.file-entry .size { color: var(--muted); font-size: 12px; flex-shrink: 0; }
+.browser-bar { display: flex; gap: 6px; margin-bottom: 8px; }
+.browser-bar input { flex: 1; font-size: 12px; padding: 6px 8px; }
+.cwd { font-size: 12px; word-break: break-all; margin-bottom: 6px; }
+.preview { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px; }
+.preview-head { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 6px; }
+.preview pre { background: var(--panel-2); padding: 10px; border-radius: 6px; white-space: pre-wrap; font-size: 12.5px; max-height: 200px; overflow-y: auto; margin: 0; font-family: "SFMono-Regular", Consolas, monospace; color: #c9d1e8; }
+.hidden { display: none; }
 .list li {
   padding: 8px 10px;
   border-bottom: 1px solid var(--border);
