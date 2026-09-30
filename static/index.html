@@ -32,13 +32,13 @@
       <!-- 文档问答 -->
       <div class="card">
         <h2>文档问答（RAG）</h2>
-        <p class="hint">把文件放进 demo_files 目录后，先「重建索引」，再提问。</p>
+        <p class="hint">基于「选中的文件夹」问答；切换文件夹会自动重建索引，也可手动点「重建索引」。</p>
         <div class="qa-row">
           <button id="index-btn" class="ghost">重建索引</button>
           <span id="index-status" class="muted"></span>
         </div>
         <div class="qa-row">
-          <input id="qa-input" placeholder="例如：EvoAgent 的核心功能有哪些？" />
+          <input id="qa-input" placeholder="例如：这个文件夹里的文件都讲了什么？" />
           <button id="qa-btn" class="primary">提问</button>
         </div>
         <div id="qa-result" class="result"></div>
