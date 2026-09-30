@@ -177,6 +177,7 @@ async function chooseDir() {
     if (data.canceled) return;                    // 用户点了取消，不动
     document.getElementById("files-path").value = data.path;
     await refreshFiles(data.path);                 // 刷新到选中的文件夹
+    await buildIndex();                            // 文档库也切换到选中文件夹
   } catch (e) {
     alert("打开文件夹选择窗口失败：" + e.message);
   } finally {

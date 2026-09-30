@@ -180,12 +180,11 @@ def search_docs(query: str, k: int = 3) -> str:
     Input: query - the question to search for; k - how many chunks to return.
     Output: the top related chunks, each prefixed with its source file."""
     # 懒 import：只有真正调用这个工具时才加载向量库（嵌入模型很重）
-    from app.rag.indexer import index_directory
+    from app.rag.indexer import ensure_indexed
     from app.rag.store import get_store
 
     store = get_store()  # 单例，进程内只建一次
-    if store.count() == 0:  # 库为空时先把当前工作目录文件索引进库（懒建库）
-        index_directory(get_workdir(), store)
+    ensure_indexed(store)  # 空库或工作目录变了就（重）建索引
 
     try:  # 模型可能把 k 写成字符串（如 "3"），兜底转 int
         k = int(k)

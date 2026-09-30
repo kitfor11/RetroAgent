@@ -12,7 +12,7 @@ from app.agent.agent import solve_task
 from app.agent.tools import get_workdir, set_workdir
 from app.config import settings
 from app.memory.store import RedisMemoryStore
-from app.rag.indexer import index_directory
+from app.rag.indexer import ensure_indexed, reindex
 from app.rag.qa import rag_answer
 from app.rag.store import get_store
 from app.skills.store import RedisSkillStore
@@ -69,17 +69,16 @@ class AskRequest(BaseModel):
 
 @app.post("/index")
 def index_docs():
-    """把当前工作目录下的文件索引进向量库（先清空再全量索引），返回入库 chunk 数。"""
-    store = get_store()
-    store.reset()
-    n = index_directory(get_workdir(), store)
-    return {"indexed_chunks": n}
+    """把当前工作目录下的文件索引进向量库（强制重建），返回入库 chunk 数。"""
+    return {"indexed_chunks": reindex(get_store())}
 
 
 @app.post("/ask")
 def ask(req: AskRequest):
-    """文档问答：检索沙盒文件内容，带引用来源回答。"""
-    return rag_answer(req.question, get_store(), k=req.k)
+    """文档问答：基于当前工作目录的文档库回答（库过期时自动重建）。"""
+    store = get_store()
+    ensure_indexed(store)
+    return rag_answer(req.question, store, k=req.k)
 
 
 @app.post("/choose-dir")

@@ -35,3 +35,29 @@ def index_directory(directory: Path, store: ChromaStore) -> int:
             sources.append(rel)
     store.add_chunks(chunks, sources)
     return len(chunks)
+
+
+# 记录当前向量库索引的是哪个目录；工作目录切换后据此判断要不要重建
+_indexed_dir: str | None = None
+
+
+def _get_workdir() -> Path:
+    """当前工作目录（懒 import，避免与 tools 的懒 import 形成顶层循环依赖）。"""
+    from app.agent.tools import get_workdir
+    return get_workdir()
+
+
+def reindex(store: ChromaStore) -> int:
+    """强制重建：清空向量库，全量索引当前工作目录，返回入库 chunk 数。"""
+    global _indexed_dir
+    store.reset()
+    n = index_directory(_get_workdir(), store)
+    _indexed_dir = str(_get_workdir())
+    return n
+
+
+def ensure_indexed(store: ChromaStore) -> int:
+    """确保向量库索引的是当前工作目录；空库或目录变了就重建，返回 chunk 数。"""
+    if store.count() == 0 or _indexed_dir != str(_get_workdir()):
+        return reindex(store)
+    return store.count()
