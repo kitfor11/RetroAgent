@@ -36,8 +36,10 @@ def solve_task(task: str, skill_store: SkillStore, memory_store) -> Dict:
     if existing:
         existing.use_count += 1  # 复用次数 +1
         skill_store.update(existing)  # 写回 Redis，持久化复用次数
+        # RAG：不直接照抄 steps，而是把它作为「参考做法」注入，让模型结合参考重新生成
+        answer, _ = run(task, lessons=lessons, reference=existing.steps)
         return {
-            "answer": existing.steps,
+            "answer": answer,
             "method": "reused_skill",
             "skill": existing.name,
         }

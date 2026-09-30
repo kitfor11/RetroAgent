@@ -28,6 +28,8 @@ class Settings:
             "EMBEDDING_MODEL",
             "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
         )
+        # 文件工具的沙盒目录：只允许读写这个目录（安全网），可在 .env 里改
+        self.sandbox_root = os.getenv("SANDBOX_ROOT", "demo_files")
 
 
 # 全局单例：别处 `from app.config import settings` 就能拿到同一份配置

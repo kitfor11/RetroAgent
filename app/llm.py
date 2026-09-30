@@ -15,16 +15,19 @@ _client = OpenAI(
 )
 
 
-def chat(messages: list[dict], temperature: float = 0.0) -> str:
+def chat(messages: list[dict], temperature: float = 0.0, stop: list[str] | None = None) -> str:
     """把一段对话发给模型，返回它的回复文本。
 
     参数：
         messages: 对话历史，形如 [{"role": "user", "content": "你好"}]
         temperature: 随机性。0 = 尽量稳定（做 Agent 需要稳定，所以默认 0）
+        stop: 停止序列。模型一旦要输出这些文字就立即停止。
+              用于 ReAct 循环：让模型在 Action 后停下，别自己脑补 Observation。
     """
     resp = _client.chat.completions.create(
         model=settings.deepseek_model,
         messages=messages,
         temperature=temperature,
+        stop=stop,
     )
     return resp.choices[0].message.content
