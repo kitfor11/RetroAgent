@@ -2,6 +2,11 @@ openai>=1.40.0
 fastapi>=0.110.0
 uvicorn[standard]>=0.29.0
 redis>=5.0.0
-numpy>=1.26.0
+# numpy 锁 1.26.4：paddlepaddle 2.6 / opencv 4.6 按 numpy 1.x 编译，装 2.x 会 ABI 冲突
+numpy==1.26.4
 python-dotenv>=1.0.0
 sentence-transformers>=2.2.0
+
+# OCR（第 6 步）：中文友好；锁经典 API 版本（3.x 改了 predict 接口）
+paddlepaddle==2.6.2
+paddleocr==2.7.3

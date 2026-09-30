@@ -30,6 +30,8 @@ class Settings:
         )
         # 文件工具的沙盒目录：只允许读写这个目录（安全网），可在 .env 里改
         self.sandbox_root = os.getenv("SANDBOX_ROOT", "demo_files")
+        # OCR 后端：paddle（PaddleOCR，需装 paddleocr/paddlepaddle）或 dummy（不识别，返回提示）
+        self.ocr_backend = os.getenv("OCR_BACKEND", "paddle")
 
 
 # 全局单例：别处 `from app.config import settings` 就能拿到同一份配置

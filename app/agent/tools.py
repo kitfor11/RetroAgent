@@ -121,6 +121,23 @@ def move_file(src: str, dst: str) -> str:
     return f"Moved {src} -> {dst}"
 
 
+@register
+def read_image_text(path: str) -> str:
+    """Read the text inside an image file using OCR (看图识字).
+    Input: path - the image file (.png/.jpg/.jpeg/.bmp). Output: the recognized text."""
+    p = _ensure_in_sandbox(path)
+    if not p.exists():
+        return f"File not found: {path}"
+    if p.suffix.lower() not in {".png", ".jpg", ".jpeg", ".bmp"}:
+        return f"Not an image file: {path} (only .png/.jpg/.jpeg/.bmp)"
+    # 懒 import：只有真正调用这个工具时才加载 OCR 引擎（paddleocr 很重）
+    from app.multimodal.ocr import get_ocr
+    try:
+        return get_ocr().read_text(str(p))
+    except Exception as e:  # OCR 失败不崩，把错误作为观察返回给 Agent
+        return f"OCR failed: {e}"
+
+
 def call_tool(name: str, args: Dict[str, Any]) -> Any:
     """按名字执行工具。找不到工具时报错（这样 Agent 乱编工具名时能被发现）。"""
     if name not in TOOLS:
