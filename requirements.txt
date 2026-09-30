@@ -15,3 +15,6 @@ paddleocr==2.7.3
 chromadb==1.5.9
 # protobuf 锁 7.x 给 chromadb；paddle 的老生成代码靠 PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python 兼容（见 config.py）
 protobuf==7.36.2
+
+# 单元测试（第 9 步）
+pytest>=8.0.0

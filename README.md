@@ -84,6 +84,10 @@ app/
 - 文档 RAG 问答（Chroma 向量库 + 带引用回答，含图片 OCR 入库）：`venv/Scripts/python tests/demo_rag.py`
 - Agent 调用文档检索工具（`search_docs`，自己查知识库回答）：`venv/Scripts/python tests/demo_agent_search.py`
 
+**跑单元测试**（不联网、不调 LLM，秒级跑完）：
+- `venv/Scripts/python -m pytest tests -q`
+- 覆盖：切片器、n-gram 向量化 / 余弦相似度、技能 / 记忆检索、沙盒安全 + 字符串工具
+
 > **可选：启用真实语义检索**。默认用字符 n-gram（零依赖）。要解决中文↔英文语义鸿沟，执行 `pip install sentence-transformers`，再把 `.env` 里的 `EMBEDDING_BACKEND` 改为 `sentence_transformers`（首次运行会下载约 120MB 模型）。验证效果跑 `venv/Scripts/python tests/verify_embedding.py`。
 
 > **可选：启用 OCR**。文件整理要「看图识字」需 `pip install paddleocr==2.7.3 paddlepaddle==2.6.2`（首次运行下载约 15MB 模型；注意 numpy 要锁 1.26.4，见 requirements.txt）。验证跑 `venv/Scripts/python tests/verify_ocr.py`。
