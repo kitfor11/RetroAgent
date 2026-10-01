@@ -1,8 +1,8 @@
-"""完整进化演示：一键跑通「解决 → 复用 → 失败 → 记教训 → 跨语言复用」。
+"""完整复盘演示：一键跑通「解决 → 复用 → 失败 → 记教训 → 跨语言复用」。
 
 用法：venv/Scripts/python tests/demo_full.py
 
-会真实调用大模型（DeepSeek），演示 Agent 的完整进化闭环。
+会真实调用大模型（DeepSeek），演示 Agent 的完整复盘闭环。
 """
 import sys
 from pathlib import Path
@@ -22,7 +22,7 @@ def main() -> None:
     memory_store.r.delete(memory_store.key)
 
     print("=" * 60)
-    print("EvoAgent 完整进化演示")
+    print("RetroAgent 完整复盘演示")
     print("=" * 60)
 
     # 场景 1：第一次解决新任务 → 学成技能
@@ -51,9 +51,9 @@ def main() -> None:
     print(f"  method = {r4['method']}")
     print(f"  复用的技能 = {r4.get('skill')}")
 
-    # 汇总：看看进化成果
+    # 汇总：看看成长成果
     print("\n" + "=" * 60)
-    print("进化成果汇总")
+    print("成长成果汇总")
     print("=" * 60)
     print("技能库：")
     for s in skill_store.list_all():

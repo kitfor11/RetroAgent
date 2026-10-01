@@ -11,7 +11,7 @@ from mcp.server.fastmcp import FastMCP
 from app.agent.tools import TOOLS
 
 # 创建 MCP server，起个名字（客户端会看到这个名字）
-mcp = FastMCP("EvoAgent")
+mcp = FastMCP("RetroAgent")
 
 # 把工具注册表里的每个工具注册成 MCP 工具
 # mcp.tool() 返回一个装饰器，作用在函数上；FastMCP 会自动读取函数名、

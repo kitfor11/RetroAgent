@@ -1,4 +1,4 @@
-"""FastAPI 入口：把 EvoAgent 包装成 RESTful API。
+"""FastAPI 入口：把 RetroAgent 包装成 RESTful API。
 
 这是「接口层」——只负责对外暴露接口，业务逻辑都在 agent/ 里。
 """
@@ -17,7 +17,7 @@ from app.rag.qa import rag_answer
 from app.rag.store import get_store
 from app.skills.store import RedisSkillStore
 
-app = FastAPI(title="EvoAgent")
+app = FastAPI(title="RetroAgent")
 
 # 全局存储实例：接口共享同一份技能库和记忆库
 # 从 JSON 文件换成 Redis——只改了这两行，业务逻辑零改动
@@ -44,7 +44,7 @@ class SolveRequest(BaseModel):
 
 @app.post("/solve")
 def solve(req: SolveRequest):
-    """提交任务，走完整进化链路（检索 → 复用/解决 → 反思入库）。"""
+    """提交任务，走完整复盘链路（检索 → 复用/解决 → 反思入库）。"""
     return solve_task(req.task, skill_store, memory_store)
 
 
@@ -93,7 +93,7 @@ def choose_dir():
     root = tk.Tk()
     root.withdraw()                 # 隐藏主窗口，只显示对话框
     root.attributes("-topmost", True)  # 对话框置顶，避免被别的窗口挡住
-    path = filedialog.askdirectory(title="选择文件夹（作为 EvoAgent 的工作目录）")
+    path = filedialog.askdirectory(title="选择文件夹（作为 RetroAgent 的工作目录）")
     root.destroy()
 
     if not path:                    # 用户点了取消

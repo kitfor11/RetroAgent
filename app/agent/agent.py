@@ -1,4 +1,4 @@
-"""Agent 的完整进化执行：检索 → 复用/解决 → 反思入库。
+"""Agent 的完整复盘执行：检索 → 复用/解决 → 反思入库。
 
 这是整个项目的「灵魂」串起来的入口：
 接到任务，先翻技能库，有就复用；没有就自己解决。
@@ -16,7 +16,7 @@ from app.skills.store import SkillStore
 
 
 def solve_task(task: str, skill_store: SkillStore, memory_store) -> Dict:
-    """执行完整进化链路，返回一个结果字典。
+    """执行完整复盘链路，返回一个结果字典。
 
     结果里 method 字段告诉调用方这次是：
     - reused_skill：复用已有技能

@@ -1,4 +1,4 @@
-# EvoAgent 部署镜像（精简版：不装 paddle/大模型，OCR 用 dummy、嵌入用 ngram）
+# RetroAgent 部署镜像（精简版：不装 paddle/大模型，OCR 用 dummy、嵌入用 ngram）
 FROM python:3.10-slim
 
 WORKDIR /app

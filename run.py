@@ -76,7 +76,7 @@ def open_browser_when_ready(url: str, timeout: float = 60.0) -> None:
 
 def main() -> None:
     print("=" * 46)
-    print("  EvoAgent 一键启动")
+    print("  RetroAgent 一键启动")
     print("=" * 46)
     check_env()
     check_redis()

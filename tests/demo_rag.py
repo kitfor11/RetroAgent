@@ -40,12 +40,12 @@ def setup() -> None:
     SANDBOX_ROOT.mkdir()
 
     (SANDBOX_ROOT / "公司介绍.txt").write_text(
-        "EvoAgent 是一个自我进化型 AI Agent，由一支小团队于 2024 年在杭州创立。"
+        "RetroAgent 是一个会复盘的 AI Agent，由一支小团队于 2024 年在杭州创立。"
         "核心思想是：Agent 完成任务后会总结经验，越用越强。",
         encoding="utf-8",
     )
     (SANDBOX_ROOT / "产品手册.md").write_text(
-        "EvoAgent 的核心功能包括：技能库（成功经验复用）、经验记忆（失败教训避坑）、"
+        "RetroAgent 的核心功能包括：技能库（成功经验复用）、经验记忆（失败教训避坑）、"
         "文件整理助手、OCR 看图识字、文档问答检索。",
         encoding="utf-8",
     )
@@ -62,7 +62,7 @@ def main() -> None:
     setup()
 
     print("=" * 60)
-    print("EvoAgent 文档 RAG 演示（Chroma 向量库 + 带引用问答）")
+    print("RetroAgent 文档 RAG 演示（Chroma 向量库 + 带引用问答）")
     print("=" * 60)
 
     # 1. 建库：把沙盒所有文件读出来、切片、向量化、入 Chroma
@@ -73,7 +73,7 @@ def main() -> None:
 
     # 2. 问答
     questions = [
-        "EvoAgent 的核心功能有哪些？",
+        "RetroAgent 的核心功能有哪些？",
         "团队在哪个城市？",
         "下季度要推出什么功能？",
     ]

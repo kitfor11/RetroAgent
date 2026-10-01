@@ -1,10 +1,10 @@
-# EvoAgent — 自我进化型 AI Agent
+# RetroAgent — 会复盘的 AI Agent
 
 一个「越用越强」的文本处理 Agent：完成任务后自动提炼成**可复用技能**，失败后自动记住**教训**，下次遇到同类任务直接复用经验、避开旧坑。
 
-> 传统 Agent 每次任务都从零思考。EvoAgent 的核心是给 Agent 加了**记忆**——既记「怎么做对的」，也记「怎么做错的」。
+> 传统 Agent 每次任务都从零思考。RetroAgent 的核心是给 Agent 加了**记忆**——既记「怎么做对的」，也记「怎么做错的」。
 
-## 核心机制：双进化
+## 核心机制：双沉淀
 
 | 机制 | 触发 | 作用 |
 |------|------|------|
@@ -54,7 +54,7 @@ app/
 │   ├── react_loop.py   # ReAct 循环（想→做→看）
 │   ├── reflect.py      # 反思：提炼技能 / 教训 / 裁判
 │   ├── tools.py        # 工具注册表
-│   └── agent.py        # 进化主链路
+│   └── agent.py        # 复盘主链路
 ├── skills/             # 技能库：模型 / 存储 / 检索 / 向量化
 ├── memory/             # 记忆库：存储 / 检索
 ├── multimodal/         # 多模态：OCR（看图识字）
@@ -83,7 +83,7 @@ static/                 # 前端界面（原生 HTML/CSS/JS，无构建步骤）
 5. 打开 `http://127.0.0.1:8000` 使用前端界面（`/docs` 可看接口文档）
 
 **跑演示**（会真实调用 DeepSeek）：
-- 完整进化闭环（解决→复用→记教训→跨语言复用）：`venv/Scripts/python tests/demo_full.py`
+- 完整复盘闭环（解决→复用→记教训→跨语言复用）：`venv/Scripts/python tests/demo_full.py`
 - 文件整理助手（真实文件工具 + CoT 思维链）：`venv/Scripts/python tests/demo_files.py`
 - OCR 文件整理（看图识字、按内容归档）：`venv/Scripts/python tests/demo_ocr.py`
 - 文档 RAG 问答（Chroma 向量库 + 带引用回答，含图片 OCR 入库）：`venv/Scripts/python tests/demo_rag.py`
@@ -109,7 +109,7 @@ static/                 # 前端界面（原生 HTML/CSS/JS，无构建步骤）
 
 | 接口 | 方法 | 说明 |
 |------|------|------|
-| `/solve` | POST | 提交任务，走完整进化链路，返回 `method`（`solved` / `reused_skill` / `failed`）+ 思维链 `trace` |
+| `/solve` | POST | 提交任务，走完整复盘链路，返回 `method`（`solved` / `reused_skill` / `failed`）+ 思维链 `trace` |
 | `/skills` | GET | 查看技能库 |
 | `/memories` | GET | 查看经验记忆 |
 | `/choose-dir` | POST | 弹出系统「选择文件夹」对话框，设为当前工作目录 |

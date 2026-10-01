@@ -2,11 +2,11 @@
 
 用法：venv/Scripts/python tests/demo_files.py
 
-这是 EvoAgent 的第一个「落地场景」：把沙盒目录里乱放的文件，按扩展名
+这是 RetroAgent 的第一个「落地场景」：把沙盒目录里乱放的文件，按扩展名
 整理进分类子目录。会打印 Agent 的完整 ReAct 轨迹，你能直接看到它每步的
 「Thought:」——这就是 CoT，推理过程明明白白，不是黑盒。
 
-（技能的「检索→增强→生成」RAG 和「越用越强」的进化闭环，见 demo_full.py）
+（技能的「检索→增强→生成」RAG 和「越用越强」的复盘闭环，见 demo_full.py）
 """
 import shutil
 import sys
@@ -40,7 +40,7 @@ def main() -> None:
     setup_sample_files()
 
     print("=" * 60)
-    print("EvoAgent 文件整理助手演示（真实文件工具 + CoT）")
+    print("RetroAgent 文件整理助手演示（真实文件工具 + CoT）")
     print("=" * 60)
     print(f"沙盒目录：{SANDBOX_ROOT}\n")
 

@@ -53,7 +53,7 @@ class RedisMemoryStore:
         host: str = "localhost",
         port: int = 6379,
         url: str = "",
-        key: str = "evoagent:memories",
+        key: str = "retroagent:memories",
     ) -> None:
         if url:
             # 托管 Redis 用连接串（含密码/SSL），本地开发用 host+port

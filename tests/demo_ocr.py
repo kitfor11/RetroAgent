@@ -48,7 +48,7 @@ def setup() -> None:
 def main() -> None:
     setup()
     print("=" * 60)
-    print("EvoAgent OCR 文件整理演示（看图识字 + CoT）")
+    print("RetroAgent OCR 文件整理演示（看图识字 + CoT）")
     print("=" * 60)
     print(f"沙盒目录：{SANDBOX_ROOT}（只有一张文件名看不出内容的 scan.png）\n")
 

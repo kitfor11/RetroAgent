@@ -91,7 +91,7 @@ class RedisSkillStore(SkillStore):
         host: str = "localhost",
         port: int = 6379,
         url: str = "",
-        key: str = "evoagent:skills",
+        key: str = "retroagent:skills",
     ) -> None:
         # decode_responses=True：让 Redis 返回字符串而不是字节，省去手动 decode
         if url:

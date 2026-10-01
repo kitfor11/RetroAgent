@@ -1,6 +1,6 @@
 # 部署指南
 
-把 EvoAgent 部署成一个公开可访问的 Web 服务。这里以 **Render**（免费、无需绑卡、直连 GitHub）为例，Railway / Fly.io 流程类似，用的是同一套文件。
+把 RetroAgent 部署成一个公开可访问的 Web 服务。这里以 **Render**（免费、无需绑卡、直连 GitHub）为例，Railway / Fly.io 流程类似，用的是同一套文件。
 
 ## 0. 已准备好的东西
 
@@ -34,7 +34,7 @@ git push origin main
 ## 3. 在 Render 上部署
 
 1. 打开 https://render.com 注册（直接用 GitHub 账号登录）
-2. 点 **New → Web Service**，选择 `kitfor11/EvoAgent` 仓库
+2. 点 **New → Web Service**，选择 `kitfor11/RetroAgent` 仓库
 3. Render 会自动识别 `Dockerfile`，直接点创建
 4. 在 **Environment** 里填两个环境变量：
    - `DEEPSEEK_API_KEY` = 你的 DeepSeek key

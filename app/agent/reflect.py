@@ -1,6 +1,6 @@
 """反思提炼：把「任务 + 轨迹」总结成可复用的技能（成功）或教训（失败）。
 
-这是「自我进化」的核心：Agent 做完任务后，换一个「提炼器」的角色，
+这是「复盘沉淀」的核心：Agent 做完任务后，换一个「提炼器」的角色，
 让模型复盘刚才的过程。
 - 成功 → 提炼成技能（复用）
 - 失败 → 提炼成教训（避坑）
@@ -110,7 +110,7 @@ def judge_success(task: str, answer: str, trace: list[str]) -> bool:
     光看「有没有 Final Answer」不够——模型可能「优雅地失败」，比如老实说
     「我没有这个工具」就交差。所以把「推理轨迹」也一起交给裁判：真正的成功
     会看到它调了工具、真的动手做了；而放弃/拒绝的轨迹里没有工具调用。
-    这就是「自我评估 / LLM-as-judge」，Reflexion 这类进化 Agent 的核心环节。
+    这就是「自我评估 / LLM-as-judge」，Reflexion 这类反思型 Agent 的核心环节。
     """
     prompt = JUDGE_PROMPT.format(task=task, answer=answer, trace="\n\n".join(trace))
     raw = chat([{"role": "user", "content": prompt}])
