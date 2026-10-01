@@ -10,6 +10,7 @@ embedding 就是把文字「翻译」成向量，让意思相近的文字，向�
 业务代码只依赖 Embedder 接口，通过 get_embedder() 按配置选择具体实现。
 """
 import re
+from collections import Counter
 
 import numpy as np
 
@@ -34,9 +35,14 @@ def build_vocab(texts: list[str]) -> list[str]:
 
 
 def text_to_vec(text: str, vocab: list[str]) -> np.ndarray:
-    """把文本转成 n-gram 频率向量：每个维度 = 对应片段出现的次数。"""
-    grams = char_ngrams(text)
-    return np.array([grams.count(g) for g in vocab], dtype=float)
+    """把文本转成 n-gram 频率向量：每个维度 = 对应片段出现的次数。
+
+    先用 Counter 统计好每个 n-gram 的次数，再按词表取值。
+    若直接 `grams.count(g)` 对每个词表维度都扫一遍，是 O(词表×文本) 的
+    二次方，chunk 一多（几百个）就会慢到卡死。
+    """
+    counts = Counter(char_ngrams(text))
+    return np.array([counts.get(g, 0) for g in vocab], dtype=float)
 
 
 def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:

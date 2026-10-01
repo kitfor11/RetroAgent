@@ -7,14 +7,24 @@ const METHOD_LABEL = {
   failed: "⚠️ 记入教训",
 };
 
-async function postJSON(url, body) {
-  const resp = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!resp.ok) throw new Error(`请求失败：HTTP ${resp.status}`);
-  return resp.json();
+async function postJSON(url, body, timeoutMs = 120000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    if (!resp.ok) throw new Error(`请求失败：HTTP ${resp.status}`);
+    return await resp.json();
+  } catch (e) {
+    if (e.name === "AbortError") throw new Error("请求超时（超过 120 秒），请重试");
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function escapeHtml(s) {

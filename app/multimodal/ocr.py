@@ -30,6 +30,8 @@ class PaddleOCREngine(OCR):
         # result 结构：[[[box, (text, score)], ...], ...]（外层按图分页）
         lines = []
         for page in result or []:
+            if not page:
+                continue  # 这一页没识别到文字时 paddle 会返回 None，跳过而不是崩
             for item in page:
                 lines.append(item[1][0])  # item[1] = (text, score)，取文字
         return "\n".join(lines)

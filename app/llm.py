@@ -29,5 +29,6 @@ def chat(messages: list[dict], temperature: float = 0.0, stop: list[str] | None 
         messages=messages,
         temperature=temperature,
         stop=stop,
+        timeout=60.0,  # 防止网络挂起让接口无限等待（默认无超时会一直卡）
     )
     return resp.choices[0].message.content
